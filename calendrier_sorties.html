@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- Page 100% autonome : CSS + JS inline, aucune ressource externe.
+     La CSP bloque toute requête sortante même en cas d'oubli. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'"/>
+<title>Calendrier des sorties 2026-2027 — Groupe 2e Bayonne</title>
+<meta name="description" content="Calendrier prévisionnel des sorties Guides et Louvettes, année scoute 2026-2027. Export iCal, filtres par branche, code couleur journée / week-end / camp."/>
+<style>
+  :root{
+    /* Palette scoute pastel unifiée */
+    --navy:#3a5878; --navy-d:#2b4258; --gold:#d9ad55; --gold-d:#b7841d;
+    --wolf:#8a6b4a; --wolf-l:#a9764a;
+    --ink:#3a3f47; --muted:#7b828c; --line:#e6e3dc; --bg:#f7f5f0; --card:#fff;
+
+    /* ===== Catégories (couleur = NATURE de la sortie, pas la durée) ===========
+       HP .............. rouge pastel
+       Compagnie/Patrouille/Rallye/Camp .. gamme de verts pastel distincts
+       Autre ........... bleu pastel
+       Religieux ....... violet pastel                                        */
+    --hp:#c76a6a;         --hp-bg:#f3dede;      /* Haute Patrouille : rouge */
+    /* Deux verts TRÈS distincts : Compagnie = vert profond/sapin ; Patrouille = vert vif/lime */
+    --compagnie:#2e7d46;  --compagnie-bg:#d6ebdd;/* vert sapin (compagnie + rallye + camp) */
+    --patrouille:#9acb54; --patrouille-bg:#eef6df;/* vert lime clair */
+    --camp:#2e7d46;       --camp-bg:#d6ebdd;    /* = compagnie */
+    --rallye:#2e7d46;     --rallye-bg:#d6ebdd;  /* = compagnie */
+    --autre:#5b8fc7;      --autre-bg:#e2edf7;   /* bleu pastel */
+    --religieux:#9a72c4;  --religieux-bg:#ece2f6;/* violet pastel */
+    /* Zone de vacances A (bandeau parallèle) */
+    --vac:#e8a94e;        --vac-bg:#fbeed6;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI",system-ui,Avenir,sans-serif;color:var(--ink);
+       background:var(--bg);font-size:14px;line-height:1.45;}
+  header{background:linear-gradient(120deg,var(--navy-d),var(--navy) 60%,#2c5583);
+         color:#fff;padding:16px 22px;position:relative;overflow:hidden;}
+  header::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;
+    background:radial-gradient(circle,rgba(224,169,46,.28),transparent 70%);}
+  header h1{margin:0;font-size:21px;font-weight:700;letter-spacing:.2px;
+    display:flex;align-items:center;gap:10px;}
+  header .fleur{font-size:22px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
+  header .sub{font-size:12.5px;opacity:.9;margin-top:3px;}
+
+  .controls{display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+    padding:12px 22px;background:var(--card);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+    background:#fff;}
+  .seg button{border:none;background:#fff;padding:7px 14px;font-size:13px;cursor:pointer;
+    font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .seg button+button{border-left:1px solid var(--line);}
+  .seg button.on{color:#fff;}
+  .seg button.on[data-b="guides"]{background:var(--navy);}
+  .seg button.on[data-b="louvettes"]{background:var(--wolf);}
+  .seg .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .seg .dot.g{background:var(--gold);} .seg .dot.l{background:var(--wolf-l);}
+
+  .btn{border:1px solid var(--line);background:#fff;color:var(--navy);font-weight:600;
+    padding:7px 13px;border-radius:9px;cursor:pointer;font-size:13px;display:inline-flex;
+    align-items:center;gap:7px;text-decoration:none;transition:.12s;}
+  .btn:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn.gold{background:var(--gold);border-color:var(--gold-d);color:#3a2b06;}
+  .btn.gold:hover{background:var(--gold-d);color:#fff;}
+  .spacer{flex:1;}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+    padding:9px 22px;background:#fbfaf7;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .lg{display:inline-flex;align-items:center;gap:7px;color:var(--muted);}
+  .lg .chip{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.12);}
+  .chip.hp{background:var(--hp);} .chip.compagnie{background:var(--compagnie);}
+  .chip.patrouille{background:var(--patrouille);} .chip.rallye{background:var(--rallye);}
+  .chip.camp{background:var(--camp);} .chip.autre{background:var(--autre);}
+  .chip.religieux{background:var(--religieux);} .chip.vac{background:var(--vac);}
+
+  #stat{padding:8px 22px;color:var(--muted);font-size:12.5px;background:#fbfaf7;
+    border-bottom:1px solid var(--line);}
+
+  main{padding:16px 22px 40px;max-width:1100px;margin:0 auto;}
+  .month{margin-bottom:22px;}
+  .month h2{font-size:15px;color:var(--navy);margin:0 0 10px;
+    display:flex;align-items:center;gap:9px;text-transform:capitalize;}
+  .month h2 .bar{flex:1;height:2px;background:linear-gradient(90deg,var(--gold),transparent);}
+
+  .ev{background:var(--card);border:1px solid var(--line);border-left-width:6px;
+    border-radius:10px;padding:11px 14px;margin-bottom:9px;display:grid;
+    grid-template-columns:82px 1fr auto;gap:4px 14px;align-items:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);transition:.12s;}
+  .ev:hover{box-shadow:0 3px 10px rgba(0,0,0,.09);transform:translateY(-1px);}
+  .ev .when{font-weight:700;font-size:13px;color:var(--ink);line-height:1.25;}
+  .ev .when small{display:block;font-weight:500;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+  .ev .what{font-weight:600;font-size:14.5px;}
+  .ev .tags{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.3px;}
+  .tag.guides{background:#e7edf5;color:var(--navy);}
+  .tag.louvettes{background:#f2e7db;color:var(--wolf);}
+  .tag.dur{color:#fff;}
+  .tag.dur.hp{background:var(--hp);} .tag.dur.compagnie{background:var(--compagnie);}
+  .tag.dur.patrouille{background:var(--patrouille);} .tag.dur.rallye{background:var(--rallye);}
+  .tag.dur.camp{background:var(--camp);} .tag.dur.autre{background:var(--autre);}
+  .tag.dur.religieux{background:var(--religieux);}
+  .ev .add{justify-self:end;}
+  .ev .add button{border:1px solid var(--line);background:#fff;border-radius:8px;
+    padding:6px 10px;font-size:12px;cursor:pointer;color:var(--navy);font-weight:600;}
+  .ev .add button:hover{background:var(--navy);color:#fff;}
+
+  /* bordure gauche = code couleur durée */
+  .ev.hp{border-left-color:var(--hp);} .ev.compagnie{border-left-color:var(--compagnie);}
+  .ev.patrouille{border-left-color:var(--patrouille);} .ev.rallye{border-left-color:var(--rallye);}
+  .ev.camp{border-left-color:var(--camp);} .ev.autre{border-left-color:var(--autre);}
+  .ev.religieux{border-left-color:var(--religieux);}
+  .ev.grp2{background:linear-gradient(90deg,rgba(0,0,0,.03),#fff 40%);}
+
+  .empty{padding:40px;text-align:center;color:var(--muted);}
+  footer{padding:16px 22px;color:var(--muted);font-size:11.5px;text-align:center;
+    border-top:1px solid var(--line);background:#fbfaf7;}
+  .modal{position:fixed;inset:0;background:rgba(20,28,45,.5);display:none;
+    align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .modal.show{display:flex;}
+  .card2{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .card2 h3{margin:0 0 6px;color:var(--navy);}
+  .card2 p{color:var(--muted);font-size:13px;margin:6px 0 16px;}
+  .card2 .opts{display:flex;flex-direction:column;gap:9px;}
+  .card2 .opts .btn{justify-content:flex-start;}
+  .card2 .close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);
+    float:right;line-height:1;margin:-6px -4px 0 0;}
+  /* ===== Vue MOBILE / Agenda (cartes tactiles + timeline) ===== */
+  .agenda{max-width:560px;margin:0 auto;}
+  .nextup{background:linear-gradient(120deg,var(--navy),#2c5583);color:#fff;
+    border-radius:14px;padding:14px 16px;margin-bottom:16px;position:relative;overflow:hidden;
+    box-shadow:0 4px 14px rgba(31,58,95,.25);}
+  .nextup .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;opacity:.85;}
+  .nextup .ttl{font-size:18px;font-weight:700;margin:3px 0 2px;}
+  .nextup .meta{font-size:13px;opacity:.92;}
+  .nextup .cd{position:absolute;right:14px;top:12px;text-align:center;
+    background:var(--gold);color:#3a2b06;border-radius:12px;padding:6px 10px;font-weight:800;
+    box-shadow:0 2px 6px rgba(0,0,0,.2);}
+  .nextup .cd b{display:block;font-size:20px;line-height:1;}
+  .nextup .cd span{font-size:10px;text-transform:uppercase;}
+  .nextup button{margin-top:10px;background:#fff;color:var(--navy);border:none;
+    padding:7px 14px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;}
+  .grp{font-size:12px;font-weight:800;color:var(--gold-d);text-transform:uppercase;
+    letter-spacing:.6px;margin:18px 4px 8px;display:flex;align-items:center;gap:8px;}
+  .grp .cnt{background:var(--gold);color:#3a2b06;border-radius:20px;padding:0 8px;
+    font-size:11px;font-weight:800;}
+  .mev{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-left-width:5px;border-radius:12px;padding:11px 12px;margin-bottom:9px;
+    align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .mev.hp{border-left-color:var(--hp);} .mev.compagnie{border-left-color:var(--compagnie);}
+  .mev.patrouille{border-left-color:var(--patrouille);} .mev.rallye{border-left-color:var(--rallye);}
+  .mev.camp{border-left-color:var(--camp);} .mev.autre{border-left-color:var(--autre);}
+  .mev.religieux{border-left-color:var(--religieux);}
+  .mev .dt{flex:0 0 52px;text-align:center;border-radius:10px;padding:6px 0;color:#fff;
+    line-height:1.1;}
+  .mev.hp .dt{background:var(--hp);} .mev.compagnie .dt{background:var(--compagnie);}
+  .mev.patrouille .dt{background:var(--patrouille);} .mev.rallye .dt{background:var(--rallye);}
+  .mev.camp .dt{background:var(--camp);} .mev.autre .dt{background:var(--autre);}
+  .mev.religieux .dt{background:var(--religieux);}
+  .mev .dt b{font-size:19px;font-weight:800;display:block;}
+  .mev .dt span{font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
+  .mev .bd{flex:1;min-width:0;}
+  .mev .bd .nm{font-weight:700;font-size:14.5px;}
+  .mev .bd .sub{font-size:12px;color:var(--muted);margin-top:1px;
+    display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .mev .bd .pill{font-size:10px;font-weight:700;padding:1px 7px;border-radius:12px;}
+  .mev .bd .pill.guides{background:#e7edf5;color:var(--navy);}
+  .mev .bd .pill.louvettes{background:#f2e7db;color:var(--wolf);}
+  .mev .go{flex:0 0 auto;border:none;background:#f4f6f9;color:var(--navy);border-radius:10px;
+    width:40px;height:40px;font-size:18px;cursor:pointer;}
+  .mev .go:active{background:var(--navy);color:#fff;}
+
+  @media (max-width:640px){
+    body{font-size:15px;}
+    header{padding:12px 16px;} header h1{font-size:18px;}
+    .controls{position:static;padding:10px 14px;gap:9px;justify-content:center;}
+    .controls .seg button{padding:8px 12px;}
+    .spacer{display:none;} .controls .btn{flex:1 1 45%;justify-content:center;}
+    .legend{padding:8px 14px;font-size:12px;justify-content:center;}
+    main{padding:12px 14px 40px;}
+    .ev{grid-template-columns:70px 1fr;}
+    .ev .add{grid-column:1/-1;justify-self:start;margin-top:4px;}
+    /* en écran étroit, la grille année/trimestre passe à 1 colonne large et lisible */
+    .grid-months{grid-template-columns:1fr;}
+  }
+
+  /* ===== Vues Trimestre / Année (grille mensuelle) ===== */
+  .grid-months{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:14px;}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .mcard h3{margin:0;padding:8px 10px;font-size:13px;color:#fff;
+    background:linear-gradient(90deg,var(--navy),#2c5583);text-transform:capitalize;
+    display:flex;justify-content:space-between;align-items:baseline;}
+  .mcard h3 .yr{font-size:11px;opacity:.8;font-weight:500;}
+  .cal{width:100%;border-collapse:collapse;table-layout:fixed;}
+  .cal th{font-size:10px;color:var(--muted);font-weight:600;padding:4px 0 2px;}
+  .cal td{height:30px;text-align:center;font-size:11.5px;vertical-align:middle;
+    border:1px solid #f0f0f0;position:relative;}
+  .cal td.wknd{background:#faf8f2;}
+  .cal td.oth{color:#ccc;}
+  .cal td .num{position:relative;z-index:1;}
+  .cal td .fete{position:absolute;top:1px;left:2px;font-size:10px;color:#8a4fb0;z-index:4;
+    line-height:1;font-weight:900;text-shadow:0 0 2px #fff,0 0 2px #fff;}
+  .cal td.has .fete{color:#6a2fa0;}
+  .cal td.fete-day{background:var(--religieux-bg)!important;}
+  .cal td{position:relative;}
+  .cal td.has{font-weight:700;cursor:pointer;color:#22343f;border-radius:0;}
+  .cal td.has.hp{background:var(--hp-bg);box-shadow:inset 0 0 0 2px var(--hp);}
+  .cal td.has.compagnie{background:var(--compagnie-bg);box-shadow:inset 0 0 0 2px var(--compagnie);}
+  .cal td.has.patrouille{background:var(--patrouille-bg);box-shadow:inset 0 0 0 2px var(--patrouille);}
+  .cal td.has.rallye{background:var(--rallye-bg);box-shadow:inset 0 0 0 2px var(--rallye);}
+  .cal td.has.camp{background:var(--camp-bg);box-shadow:inset 0 0 0 2px var(--camp);}
+  .cal td.has.autre{background:var(--autre-bg);box-shadow:inset 0 0 0 2px var(--autre);}
+  .cal td.has.religieux{background:var(--religieux-bg);box-shadow:inset 0 0 0 2px var(--religieux);}
+  /* jour COMMUN guides+louvettes : deux couleurs (diagonale) */
+  .cal td.has.dual{box-shadow:inset 0 0 0 2px #555;}
+  .cal td.vac{background:var(--vac-bg);} /* vacances zone A */
+  .cal td.vac .num{color:var(--gold-d);}
+  .cal td.has:hover{outline:2px solid var(--gold-d);outline-offset:-2px;z-index:2;}
+  .mcard .mnone{padding:0 10px 8px;font-size:10.5px;color:#bbb;}
+  .mcard .mlist{padding:6px 10px 10px;font-size:11px;border-top:1px dashed var(--line);}
+  .mcard .mlist .mi{display:flex;gap:6px;align-items:flex-start;margin:3px 0;}
+  .mcard .mlist .mi .sw{width:9px;height:9px;border-radius:3px;margin-top:3px;flex:0 0 auto;}
+  .sw.hp{background:var(--hp);} .sw.compagnie{background:var(--compagnie);}
+  .sw.patrouille{background:var(--patrouille);} .sw.rallye{background:var(--rallye);}
+  .sw.camp{background:var(--camp);} .sw.autre{background:var(--autre);}
+  .sw.religieux{background:var(--religieux);}
+  .quarter-h{grid-column:1/-1;font-size:14px;color:var(--gold-d);font-weight:700;
+    margin:8px 0 -4px;padding-bottom:4px;border-bottom:2px solid var(--gold);}
+
+  /* ===== Impression ===== */
+  @media print{
+    @page{margin:8mm;}
+    /* Vue année : on force le paysage A4 pour tenir sur une seule feuille */
+    @page year{size:A4 landscape;margin:6mm;}
+    body.print-year{page:year;}
+    header::after{display:none;}
+    body{background:#fff;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .controls,.modal,.ev .add,#stat{display:none !important;}
+    header{background:#fff !important;color:#000;border-bottom:2px solid var(--navy);padding:6px 0;}
+    header h1{font-size:16px;color:var(--navy);} header .fleur{filter:none;}
+    header .sub{color:#444;}
+    .legend{background:#fff;border:none;padding:4px 0;gap:10px;}
+    main{padding:6px 0;max-width:none;}
+    .ev{break-inside:avoid;box-shadow:none;grid-template-columns:78px 1fr;}
+    .ev:hover{transform:none;}
+    .month h2{color:var(--navy);}
+    .grid-months{gap:8px;grid-template-columns:repeat(3,1fr);}
+    .mcard{break-inside:avoid;} .mcard h3{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    footer{display:none;}
+    /* --- Vue ANNÉE sur UNE SEULE PAGE (A4 paysage recommandé) ---
+       12 mois en 4 colonnes × 3 rangées, détail texte masqué, cellules compactes */
+    body.print-year main{padding:2px 0;}
+    body.print-year .grid-months{grid-template-columns:repeat(4,1fr);gap:4px;}
+    body.print-year .mcard{break-inside:avoid;font-size:8px;}
+    body.print-year .mcard h3{padding:3px 6px;font-size:10px;}
+    body.print-year .mcard .mlist{display:none;} /* pas de détail texte */
+    body.print-year .mcard .mnone{display:none;}
+    body.print-year .cal td{height:15px;font-size:8px;}
+    body.print-year .cal th{font-size:7px;padding:1px 0;}
+    body.print-year .cal td.has{box-shadow:inset 0 0 0 1.2px currentColor;}
+    body.print-year header{padding:2px 0;border-bottom:1px solid var(--navy);}
+    body.print-year header h1{font-size:13px;}
+    body.print-year .legend{padding:2px 0;font-size:8px;gap:7px;}
+    body.print-year .legend .chip{width:11px;height:11px;}
+    body.print-year .cal td .fete{font-size:6px;}
+    /* filet de sécurité : léger zoom pour absorber les marges imprimante et garantir 1 page */
+    body.print-year #list{zoom:.94;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="fleur">⚜️</span> Calendrier des sorties 2026 – 2027</h1>
+  <div class="sub">Groupe 2<sup>e</sup> Bayonne &middot; branches Guides &amp; Louvettes &middot; calendrier prévisionnel <em>(dates de camp à confirmer)</em></div>
+</header>
+
+<div class="controls">
+  <div class="seg" id="branchSeg" title="Activez une branche ou les deux">
+    <button data-b="guides" class="on"><span class="dot g"></span>Guides</button>
+    <button data-b="louvettes" class="on"><span class="dot l"></span>Louvettes</button>
+  </div>
+  <div class="seg" id="viewSeg">
+    <button data-v="agenda">📱 Mobile</button>
+    <button data-v="list" class="on">📋 Liste</button>
+    <button data-v="quarter">🗂️ Trimestre</button>
+    <button data-v="year">🗓️ Année</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="btn gold" id="subBtn">🔔 S'abonner</button>
+  <button class="btn" id="dlAll">⬇️ Tout (.ics)</button>
+  <button class="btn" id="dlView">⬇️ La vue</button>
+  <button class="btn" id="printBtn">🖨️ Imprimer</button>
+  <button class="btn" id="helpBtn">❓ Aide</button>
+</div>
+
+<div class="legend">
+  <span class="lg"><span class="chip hp"></span> Haute Patrouille</span>
+  <span class="lg"><span class="chip patrouille"></span> Patrouille</span>
+  <span class="lg"><span class="chip compagnie"></span> Compagnie <span style="color:#9aa2ac">(+ rallye, camp)</span></span>
+  <span class="lg"><span class="chip autre"></span> Autre sortie</span>
+  <span class="lg"><span class="chip religieux"></span> Fête de groupe</span>
+  <span class="lg"><span class="chip vac"></span> Vacances (zone A)</span>
+  <span class="lg"><span style="font-size:13px">✝</span> Fête catholique</span>
+  <span class="lg" style="gap:4px"><span class="chip" style="background:linear-gradient(135deg,#5b8fc7 0 46%,#fff 46% 54%,#2e7d46 54% 100%)"></span> Jour commun G+L</span>
+</div>
+
+<div id="stat"></div>
+<main id="list"></main>
+
+<footer>
+  Page autonome — aucune donnée envoyée en ligne. Fuseau : Europe/Paris.
+  Généré pour l'année scoute 2026-2027. Vérifiez toujours les dates auprès des chefs/cheftaines avant de vous engager.
+</footer>
+
+<!-- Modal aide import -->
+<div class="modal" id="help">
+  <div class="card2">
+    <button class="close" data-close>&times;</button>
+    <h3>🔔 S'abonner (recommandé) — mises à jour automatiques</h3>
+    <p>Abonnez votre agenda à l'un de ces liens : les <b>nouvelles dates et
+       corrections apparaissent toutes seules</b>, sans rien re-télécharger.</p>
+    <div class="opts">
+      <a class="btn gold" href="webcal://lubinkerhuel.github.io/2eBayonne/sorties_toutes.ics">🔔 S'abonner — Guides + Louvettes</a>
+      <a class="btn" href="webcal://lubinkerhuel.github.io/2eBayonne/sorties_guides.ics">🔔 S'abonner — Guides</a>
+      <a class="btn" href="webcal://lubinkerhuel.github.io/2eBayonne/sorties_louvettes.ics">🔔 S'abonner — Louvettes</a>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px">
+      Sur iPhone/Mac, le lien <b>webcal</b> ouvre directement « S'abonner ».
+      Sur <b>Google Agenda</b> (ordinateur) : « Autres agendas → + → À partir
+       de l'URL » et collez le lien en <code>https://…</code> :<br>
+      <code style="font-size:11px">https://lubinkerhuel.github.io/2eBayonne/sorties_toutes.ics</code></p>
+
+    <h3 style="margin-top:18px">⬇️ Ou importer une seule fois (figé)</h3>
+    <p>Le fichier <b>.ics</b> (iCalendar, standard universel) s'importe dans tous les agendas ;
+       il ne se met pas à jour ensuite. Utilisez les boutons « Tout (.ics) » / « La vue ».</p>
+    <div class="opts">
+      <span class="btn" style="cursor:default"><b>Google Agenda&nbsp;:</b>&nbsp;Paramètres → Importer/Exporter → Importer</span>
+      <span class="btn" style="cursor:default"><b>Apple / iPhone&nbsp;:</b>&nbsp;ouvrez le fichier .ics → « Ajouter »</span>
+      <span class="btn" style="cursor:default"><b>Outlook&nbsp;:</b>&nbsp;Fichier → Ouvrir &amp; exporter → Importer un fichier .ics</span>
+    </div>
+    <p style="margin-top:12px">💡 Astuce : filtrez d'abord sur <b>Guides</b> ou <b>Louvettes</b>,
+       puis « La vue » pour n'importer que les dates qui vous concernent.</p>
+  </div>
+</div>
+
+<!-- Modal impression -->
+<div class="modal" id="printModal">
+  <div class="card2">
+    <button class="close" data-close>&times;</button>
+    <h3>Imprimer le calendrier</h3>
+    <p>Choisissez le format. L'aperçu utilisera la branche filtrée
+       (<b id="pBranch">toutes</b>). Vous pourrez ensuite « Enregistrer au format PDF »
+       depuis la boîte d'impression.</p>
+    <div class="opts">
+      <button class="btn" data-print="list">📋 Fiche liste — une ligne par sortie (portrait)</button>
+      <button class="btn" data-print="year">🗓️ Année sur 1 page — 12 mini-mois couleur (A4 <b>paysage</b> conseillé)</button>
+      <button class="btn" data-print="current">🖥️ Vue actuelle — imprimer exactement l'affichage</button>
+    </div>
+    <p style="margin-top:14px">💡 Pour un PDF : dans la boîte d'impression, choisissez
+       l'imprimante « <b>Enregistrer au format PDF</b> » (Microsoft Print to PDF / Aperçu).</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===== Données ================================================================
+   type : 'day' (<1j), 'we' (2j), 'camp' (>2j)
+   group:true -> événement de groupe (commun aux 2 branches, surligné)
+   branches : ['guides'] | ['louvettes'] | ['guides','louvettes']
+   d = début (AAAA-MM-JJ), e = fin INCLUSE (AAAA-MM-JJ). Pour 'day', e omis. ==== */
+const EVENTS = [
+  // ---- Communs / groupe -------------------------------------------------------
+  {d:"2026-09-20", t:"Rentrée", type:"day", group:true, branches:["guides","louvettes"]},
+  {d:"2026-12-06", t:"Messe de groupe", type:"day", group:true, branches:["guides","louvettes"]},
+  {d:"2027-01-31", t:"Quête des lépreux", type:"day", group:true, branches:["guides","louvettes"]},
+  {d:"2027-04-04", t:"Fête de groupe", type:"day", group:true, branches:["guides","louvettes"]},
+  {d:"2027-04-22", e:"2027-04-25", t:"Rallye de Provence", type:"camp", group:true, branches:["guides","louvettes"]},
+
+  // ---- GUIDES -----------------------------------------------------------------
+  {d:"2026-10-10", e:"2026-10-11", t:"WE Haute Patrouille", type:"we", branches:["guides"]},
+  {d:"2026-11-07", e:"2026-11-08", t:"WE Compagnie", type:"we", branches:["guides"]},
+  {d:"2026-11-21", t:"Journée diocésaine des jeunes", type:"day", branches:["guides"]},
+  {d:"2026-11-28", e:"2026-11-29", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2026-12-05", e:"2026-12-06", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2026-12-19", e:"2026-12-20", t:"WE Compagnie", type:"we", branches:["guides"]},
+  {d:"2027-01-09", e:"2027-01-10", t:"WE Haute Patrouille", type:"we", branches:["guides"]},
+  {d:"2027-01-23", e:"2027-01-24", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2027-02-06", e:"2027-02-07", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2027-03-06", t:"Marche de Carême", type:"day", branches:["guides"]},
+  {d:"2027-03-06", e:"2027-03-07", t:"WE Compagnie", type:"we", branches:["guides"]},
+  {d:"2027-05-01", e:"2027-05-02", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2027-05-29", e:"2027-05-30", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2027-06-12", e:"2027-06-13", t:"WE Patrouille", type:"we", branches:["guides"]},
+  {d:"2027-07-03", e:"2027-07-16", t:"Camp d'été (dates à confirmer)", type:"camp", branches:["guides"]},
+
+  // ---- LOUVETTES --------------------------------------------------------------
+  {d:"2026-10-04", t:"Sortie Clairière", type:"day", branches:["louvettes"]},
+  {d:"2026-10-11", t:"Sortie Louvettes &amp; vente calendriers", type:"day", branches:["louvettes"]},
+  {d:"2026-11-08", t:"Sortie Louvettes", type:"day", branches:["louvettes"]},
+  {d:"2027-01-10", t:"Sortie Louvettes", type:"day", branches:["louvettes"]},
+  {d:"2027-02-07", t:"Sortie Louvettes", type:"day", branches:["louvettes"]},
+  {d:"2027-03-07", t:"Sortie Louvettes", type:"day", branches:["louvettes"]},
+  {d:"2027-05-02", t:"Sortie Louvettes", type:"day", branches:["louvettes"]},
+  {d:"2027-05-30", t:"Sortie Louvettes", type:"day", branches:["louvettes"]},
+  {d:"2027-06-12", e:"2027-06-13", t:"WE Clairière", type:"we", branches:["louvettes"]},
+  {d:"2027-07-03", e:"2027-07-06", t:"Camp Louvettes", type:"camp", branches:["louvettes"]},
+];
+
+const MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août",
+  "septembre","octobre","novembre","décembre"];
+const WD=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+const CAL_NAME={all:"Sorties Guides & Louvettes",guides:"Sorties Guides",louvettes:"Sorties Louvettes"};
+
+/* ===== Vacances scolaires Zone A 2026-2027 (dates INCLUSIVES) ===============
+   Aix-Marseille, Besan\u00e7on, Bordeaux, Clermont, Dijon, Grenoble, Limoges,
+   Lyon, Poitiers. Sources : calendrier officiel \u00c9ducation nationale. ======== */
+const VACANCES=[
+  {d:"2026-10-17", e:"2026-11-02", t:"Toussaint"},
+  {d:"2026-12-19", e:"2027-01-04", t:"No\u00ebl"},
+  {d:"2027-02-06", e:"2027-02-22", t:"Hiver (zone A)"},
+  {d:"2027-04-03", e:"2027-04-19", t:"Printemps (zone A)"},
+  {d:"2027-07-03", e:"2027-08-31", t:"\u00c9t\u00e9"}
+];
+function isVac(y,m,day){
+  const dt=new Date(y,m,day);
+  return VACANCES.some(v=>{const a=parse(v.d),b=parse(v.e);return dt>=a&&dt<=b;});
+}
+
+/* ===== Grandes f\u00eates catholiques 2026-2027 (rep\u00e8re discret \u271d) ===========
+   P\u00e2ques 2027 = 28 mars ; d\u00e9riv\u00e9es : Rameaux -7, Ascension +39, Pentec\u00f4te +49. */
+const FETES={
+  "2026-12-25":"No\u00ebl",
+  "2027-01-06":"\u00c9piphanie",
+  "2027-03-21":"Rameaux",
+  "2027-03-28":"P\u00e2ques",
+  "2027-05-06":"Ascension",
+  "2027-05-16":"Pentec\u00f4te"
+};
+function feteOn(y,m,day){
+  const k=y+"-"+String(m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+  return FETES[k]||null;
+}
+
+let activeBranches=new Set(["guides","louvettes"]); // toggles independants
+function branchKey(){ // "all" | "guides" | "louvettes" (compat export/hash)
+  if(activeBranches.size===2) return "all";
+  return activeBranches.has("guides")?"guides":(activeBranches.has("louvettes")?"louvettes":"none");
+}
+let view="list";
+
+function parse(s){const[y,m,dd]=s.split("-").map(Number);return new Date(y,m-1,dd);}
+// Suite chronologique des 12 mois de l'année scoute (sept 2026 -> août 2027)
+const YEAR_MONTHS=[[2026,8],[2026,9],[2026,10],[2026,11],[2027,0],[2027,1],
+  [2027,2],[2027,3],[2027,4],[2027,5],[2027,6],[2027,7]];
+const QUARTERS=[
+  {name:"1\u1d49\u02b3 trimestre \u2014 automne (sept.\u2013nov.)",m:[[2026,8],[2026,9],[2026,10]]},
+  {name:"2\u1d49 trimestre \u2014 hiver (d\u00e9c.\u2013f\u00e9vr.)",m:[[2026,11],[2027,0],[2027,1]]},
+  {name:"3\u1d49 trimestre \u2014 printemps (mars\u2013mai)",m:[[2027,2],[2027,3],[2027,4]]},
+  {name:"4\u1d49 trimestre \u2014 \u00e9t\u00e9 & camps (juin\u2013ao\u00fbt)",m:[[2027,5],[2027,6],[2027,7]]}
+];
+/* ===== Cat\u00e9gorie d\u00e9riv\u00e9e du libell\u00e9 (couleur = nature, pas dur\u00e9e) ========= */
+function catOf(ev){
+  if(ev.cat) return ev.cat;
+  const s=(ev.t||"").toLowerCase();
+  if(s.includes("haute patrouille")||/\bhp\b/.test(s)) return "hp";
+  // Rallye de Provence et Camp d'été = traités comme des WE Compagnie (même couleur)
+  if(s.includes("rallye")||s.includes("camp")||s.includes("compagnie")) return "compagnie";
+  if(s.includes("patrouille")) return "patrouille";
+  if(s.includes("messe")||s.includes("qu\u00eate")||s.includes("lepreux")||
+     s.includes("l\u00e9preux")||s.includes("f\u00eate de groupe")||s.includes("car\u00eame")) return "religieux";
+  return "autre";
+}
+const CAT_LABEL={hp:"Haute Patrouille",compagnie:"Compagnie",patrouille:"Patrouille",
+  autre:"Sortie",religieux:"F\u00eate religieuse"};
+function gcls(ev){return catOf(ev);}
+function evsInMonth(y,m){return EVENTS.filter(visible).filter(ev=>{
+  const a=parse(ev.d),b=ev.e?parse(ev.e):a;
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  return a<=last&&b>=first; // chevauchement
+}).sort((x,y2)=>x.d.localeCompare(y2.d));}
+function fmtWhen(ev){
+  const a=parse(ev.d);
+  if(ev.type==="day"||!ev.e){
+    return `<small>${WD[a.getDay()]}</small>${a.getDate()} ${MONTHS[a.getMonth()].slice(0,4)}.`;
+  }
+  const b=parse(ev.e);
+  if(a.getMonth()===b.getMonth())
+    return `<small>${WD[a.getDay()].slice(0,3)}. → ${WD[b.getDay()].slice(0,3)}.</small>${a.getDate()}–${b.getDate()} ${MONTHS[a.getMonth()].slice(0,4)}.`;
+  return `<small>plusieurs jours</small>${a.getDate()} ${MONTHS[a.getMonth()].slice(0,3)}. → ${b.getDate()} ${MONTHS[b.getMonth()].slice(0,3)}.`;
+}
+function durLabel(ev){
+  const c=catOf(ev);
+  return {cls:c,txt:CAT_LABEL[c]};
+}
+function visible(ev){return ev.branches.some(b=>activeBranches.has(b));}
+
+function render(){
+  const list=document.getElementById("list");
+  const evs=EVENTS.filter(visible).sort((a,b)=>a.d.localeCompare(b.d));
+  document.getElementById("stat").textContent=
+    `${evs.length} sortie(s) affichée(s) — `+(activeBranches.size===2?"Guides + Louvettes":(activeBranches.size?[...activeBranches].map(b=>b==="guides"?"Guides":"Louvettes").join(""):"aucune branche"))
+    +"  •  vue "+({list:"liste",quarter:"trimestre",year:"année"}[view]);
+  if(!evs.length){list.innerHTML='<div class="empty">Aucune sortie.</div>';return;}
+  if(view==="agenda") return renderMobile(list,evs);
+  if(view==="list") return renderList(list,evs);
+  if(view==="quarter") return renderQuarter(list);
+  return renderYear(list);
+}
+
+/* ---- Vue MOBILE / Agenda (chronologique + « prochaine sortie ») ---- */
+function todayMidnight(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function endDate(ev){return ev.e?parse(ev.e):parse(ev.d);}
+function daysUntil(ev){
+  return Math.round((parse(ev.d)-todayMidnight())/86400000);
+}
+function groupOf(ev){
+  // regroupement relatif à aujourd'hui
+  const end=endDate(ev); end.setHours(23,59,59,999);
+  if(end<todayMidnight()) return {k:"pass",lbl:"D\u00e9j\u00e0 pass\u00e9"};
+  const n=daysUntil(ev);
+  if(n<=7)  return {k:"soon",lbl:"Cette semaine"};
+  if(n<=31) return {k:"month",lbl:"Ce mois-ci"};
+  if(n<=92) return {k:"quart",lbl:"Dans les 3 mois"};
+  return {k:"later",lbl:"Plus tard"};
+}
+function mobileCard(ev){
+  const a=parse(ev.d), c=gcls(ev);
+  const dd=ev.e?`${a.getDate()}\u2013${endDate(ev).getDate()}`:`${a.getDate()}`;
+  const brPills=ev.branches.map(b=>
+    `<span class="pill ${b}">${b==="guides"?"Guides":"Louvettes"}</span>`).join("");
+  const durTxt=CAT_LABEL[c]+(ev.e?(ev.type==="camp"?" \u00b7 plusieurs j.":" \u00b7 WE"):"");
+  const when=ev.e
+    ? `${WD[a.getDay()].slice(0,3)}. \u2192 ${WD[endDate(ev).getDay()].slice(0,3)}.`
+    : WD[a.getDay()];
+  return `<div class="mev ${c}">
+    <div class="dt"><b>${dd}</b><span>${MONTHS[a.getMonth()].slice(0,4)}.</span></div>
+    <div class="bd">
+      <div class="nm">${ev.t}</div>
+      <div class="sub">${when} \u00b7 ${durTxt} ${brPills}</div>
+    </div>
+    <button class="go" data-i="${EVENTS.indexOf(ev)}" title="Ajouter \u00e0 l'agenda">📅</button>
+  </div>`;
+}
+function renderMobile(list,evs){
+  // « prochaine sortie » = 1er événement pas encore terminé
+  const upcoming=evs.filter(ev=>{const e=endDate(ev);e.setHours(23,59,59,999);return e>=todayMidnight();});
+  let head="";
+  if(upcoming.length){
+    const nx=upcoming[0], n=daysUntil(nx);
+    const cd = n<0 ? {b:"\u25cf",s:"en cours"} : n===0 ? {b:"0",s:"aujourd'hui"} :
+               n===1 ? {b:"1",s:"jour"} : {b:String(n),s:"jours"};
+    const a=parse(nx.d);
+    const dateTxt=nx.e
+      ? `${a.getDate()} \u2192 ${endDate(nx).getDate()} ${MONTHS[endDate(nx).getMonth()]}`
+      : `${WD[a.getDay()]} ${a.getDate()} ${MONTHS[a.getMonth()]}`;
+    const brTxt=nx.branches.map(b=>b==="guides"?"Guides":"Louvettes").join(" & ");
+    head=`<div class="nextup">
+      <div class="cd"><b>${cd.b}</b><span>${cd.s}</span></div>
+      <div class="lbl">Prochaine sortie</div>
+      <div class="ttl">${nx.t}</div>
+      <div class="meta">${dateTxt} \u00b7 ${brTxt}</div>
+      <button data-i="${EVENTS.indexOf(nx)}">📅 Ajouter \u00e0 mon agenda</button>
+    </div>`;
+  }
+  // groupes ordonnés
+  const order=["soon","month","quart","later","pass"];
+  const buckets={};
+  evs.forEach(ev=>{const g=groupOf(ev);(buckets[g.k]=buckets[g.k]||{lbl:g.lbl,items:[]}).items.push(ev);});
+  let body="";
+  order.forEach(k=>{
+    const b=buckets[k]; if(!b||!b.items.length)return;
+    body+=`<div class="grp">${b.lbl}<span class="cnt">${b.items.length}</span></div>`;
+    body+=b.items.map(mobileCard).join("");
+  });
+  list.innerHTML=`<div class="agenda">${head}${body}</div>`;
+  list.querySelectorAll("[data-i]").forEach(el=>
+    el.onclick=()=>downloadICS([EVENTS[+el.dataset.i]],"sortie"));
+}
+
+function evCard(ev){
+  const d=durLabel(ev), c=gcls(ev);
+  const brTags=ev.branches.map(b=>
+    `<span class="tag ${b}">${b==="guides"?"Guides":"Louvettes"}</span>`).join("");
+  const weTag=ev.e?`<span class="tag" style="background:#eee;color:#555">${ev.type==="camp"?"plusieurs jours":"week-end"}</span>`:"";
+  return `<article class="ev ${c}${ev.group?" grp2":""}">
+    <div class="when">${fmtWhen(ev)}</div>
+    <div class="what">${ev.t}
+      <div class="tags">
+        <span class="tag dur ${c}">${d.txt}</span>${weTag}${brTags}
+      </div>
+    </div>
+    <div class="add"><button data-i="${EVENTS.indexOf(ev)}" title="Télécharger cette sortie">📅 Ajouter</button></div>
+  </article>`;
+}
+function wireAdd(root){
+  root.querySelectorAll(".add button").forEach(b=>
+    b.onclick=()=>downloadICS([EVENTS[+b.dataset.i]],"sortie"));
+}
+function wireCells(root){
+  root.querySelectorAll(".cal td.has").forEach(td=>
+    td.onclick=()=>downloadICS([EVENTS[+td.dataset.i]],"sortie"));
+}
+
+/* ---- Vue LISTE (groupée par mois) ---- */
+function renderList(list,evs){
+  let html="",curKey="";
+  evs.forEach(ev=>{
+    const a=parse(ev.d), key=a.getFullYear()+"-"+a.getMonth();
+    if(key!==curKey){
+      if(curKey)html+="</div>";
+      html+=`<section class="month"><h2>${MONTHS[a.getMonth()]} ${a.getFullYear()}<span class="bar"></span></h2>`;
+      curKey=key;
+    }
+    html+=evCard(ev);
+  });
+  html+="</div>";
+  list.innerHTML=html; wireAdd(list);
+}
+
+/* ---- Mini-calendrier mensuel (grille jours) ---- */
+function miniMonth(y,m){
+  const evs=evsInMonth(y,m);
+  // Pour chaque jour : categorie par branche (permet le rendu BI-COLORE des jours communs)
+  const dayMap={}; // dd -> {g:{cls,i}, l:{cls,i}, i}
+  evs.forEach(ev=>{
+    const a=parse(ev.d),b=ev.e?parse(ev.e):a, cls=gcls(ev), ix=EVENTS.indexOf(ev);
+    for(let dt=new Date(a);dt<=b;dt.setDate(dt.getDate()+1)){
+      if(dt.getFullYear()===y&&dt.getMonth()===m){
+        const dd=dt.getDate(); const e=dayMap[dd]=dayMap[dd]||{i:ix};
+        if(ev.branches.includes("guides")    && !e.g) e.g={cls,i:ix};
+        if(ev.branches.includes("louvettes") && !e.l) e.l={cls,i:ix};
+      }
+    }
+  });
+  const CATCOL={hp:"var(--hp)",compagnie:"var(--compagnie)",patrouille:"var(--patrouille)",
+    rallye:"var(--rallye)",camp:"var(--camp)",autre:"var(--autre)",religieux:"var(--religieux)"};
+  const CATBG={hp:"var(--hp-bg)",compagnie:"var(--compagnie-bg)",patrouille:"var(--patrouille-bg)",
+    rallye:"var(--rallye-bg)",camp:"var(--camp-bg)",autre:"var(--autre-bg)",religieux:"var(--religieux-bg)"};
+  const first=new Date(y,m,1), start=(first.getDay()+6)%7; // lundi=0
+  const nd=new Date(y,m+1,0).getDate();
+  let cells="",day=1;
+  for(let w=0;w<6;w++){
+    let row="";
+    for(let c=0;c<7;c++){
+      const idx=w*7+c;
+      if(idx<start||day>nd){row+=`<td class="oth"></td>`;}
+      else{
+        const wknd=(c>=5)?"wknd":"";
+        const vac=isVac(y,m,day)?"vac":"";
+        const fete=feteOn(y,m,day);
+        const fmark=fete?`<span class="fete" title="${fete}">\u271d</span>`:"";
+        const hit=dayMap[day];
+        if(hit){
+          const g=hit.g, l=hit.l;
+          const dual=(g&&l&&activeBranches.has("guides")&&activeBranches.has("louvettes"));
+          const pick=g||l;
+          const iId=(pick||hit).i;
+          if(dual){
+            const cg=CATBG[g.cls]||"var(--autre-bg)", cl=CATBG[l.cls]||"var(--autre-bg)";
+            const bg=`linear-gradient(135deg, ${cg} 0 50%, ${cl} 50% 100%)`;
+            row+=`<td class="has dual ${wknd} ${vac}" data-i="${iId}" style="background:${bg};color:#22343f" title="Commun Guides (haut-gauche) + Louvettes (bas-droite)">${fmark}<span class="num">${day}</span></td>`;
+          }else{
+            const cls=(pick||{cls:"autre"}).cls;
+            row+=`<td class="has ${cls} ${wknd} ${vac}" data-i="${iId}" title="Voir / telecharger">${fmark}<span class="num">${day}</span></td>`;
+          }
+        }
+        else row+=`<td class="${wknd} ${vac} ${fete?"fete-day":""}"${fete?` title="Fête catholique : ${fete}"`:""}>${fmark}<span class="num">${day}</span></td>`;
+        day++;
+      }
+    }
+    cells+=`<tr>${row}</tr>`;
+    if(day>nd) break;
+  }
+  const detail=evs.length?
+    `<div class="mlist">${evs.map(ev=>{
+      const a=parse(ev.d),b=ev.e?parse(ev.e):null;
+      const dd=b?`${a.getDate()}\u2013${b.getMonth()===m?b.getDate():b.getDate()+"/"+(b.getMonth()+1)}`:`${a.getDate()}`;
+      return `<div class="mi"><span class="sw ${gcls(ev)}"></span><span><b>${dd}</b> ${ev.t}</span></div>`;
+    }).join("")}</div>`
+    :`<div class="mnone">— aucune sortie —</div>`;
+  return `<div class="mcard">
+    <h3><span>${MONTHS[m]}</span><span class="yr">${y}</span></h3>
+    <table class="cal"><thead><tr>
+      <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
+    </tr></thead><tbody>${cells}</tbody></table>
+    ${detail}
+  </div>`;
+}
+
+/* ---- Vue ANNÉE (12 mini-mois) ---- */
+function renderYear(list){
+  const html=`<div class="grid-months">${
+    YEAR_MONTHS.map(([y,m])=>miniMonth(y,m)).join("")}</div>`;
+  list.innerHTML=html; wireCells(list);
+}
+
+/* ---- Vue TRIMESTRE (4 blocs de 3 mois) ---- */
+function renderQuarter(list){
+  const html=QUARTERS.map(q=>
+    `<div class="grid-months">
+       <div class="quarter-h">${q.name}</div>
+       ${q.m.map(([y,m])=>miniMonth(y,m)).join("")}
+     </div>`).join("");
+  list.innerHTML=html; wireCells(list);
+}
+
+/* ===== Génération iCal (RFC 5545) ==========================================
+   Les sorties multi-jours utilisent des dates VALUE=DATE (all-day).
+   DTEND est EXCLUSIF en iCal → on ajoute 1 jour à la fin incluse. ============ */
+function icsDate(s){return s.replace(/-/g,"");}
+function addDay(s){const d=parse(s);d.setDate(d.getDate()+1);
+  return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");}
+function esc(t){return t.replace(/&amp;/g,"&").replace(/([,;\\])/g,"\\$1").replace(/\n/g,"\\n");}
+function stamp(){const d=new Date();const p=n=>String(n).padStart(2,"0");
+  return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+"T"+
+         p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+"Z";}
+function fold(l){/* pliage 75 octets RFC5545 */
+  if(l.length<=74)return l;const out=[];let s=l;
+  out.push(s.slice(0,74));s=s.slice(74);
+  while(s.length>73){out.push(" "+s.slice(0,73));s=s.slice(73);}
+  out.push(" "+s);return out.join("\r\n");}
+function buildICS(evs,calName){
+  const L=["BEGIN:VCALENDAR","VERSION:2.0",
+    "PRODID:-//Groupe Scout//Calendrier Sorties 2026-2027//FR","CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",fold("X-WR-CALNAME:"+calName),
+    "REFRESH-INTERVAL;VALUE=DURATION:P1D","X-PUBLISHED-TTL:P1D"];
+  evs.forEach(ev=>{
+    const end=ev.e?ev.e:ev.d;
+    const branchTxt=ev.branches.map(b=>b==="guides"?"Guides":"Louvettes").join(" & ");
+    const dur=ev.type==="camp"?"Camp/séjour":ev.type==="we"?"Week-end":"Sortie à la journée";
+    L.push("BEGIN:VEVENT");
+    L.push("UID:"+ev.d+"-"+esc(ev.t).replace(/[^a-zA-Z0-9]/g,"").slice(0,20)+"@sorties.scout");
+    L.push("DTSTAMP:"+stamp());
+    L.push("DTSTART;VALUE=DATE:"+icsDate(ev.d));
+    L.push("DTEND;VALUE=DATE:"+addDay(end));
+    L.push(fold("SUMMARY:"+(ev.group?"[Groupe] ":"")+esc(ev.t)));
+    L.push(fold("DESCRIPTION:Branche : "+branchTxt+" — "+dur+
+      ". Calendrier prévisionnel 2026-2027 (dates à confirmer)."));
+    L.push("CATEGORIES:"+ev.branches.map(b=>b.toUpperCase()).join(","));
+    L.push("TRANSP:TRANSPARENT");
+    L.push("END:VEVENT");
+  });
+  L.push("END:VCALENDAR");
+  return L.join("\r\n");
+}
+function downloadICS(evs,fnbase){
+  const name=CAL_NAME[branchKey()]||"Sorties Guides & Louvettes";
+  const blob=new Blob([buildICS(evs,name)],{type:"text/calendar;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");
+  a.href=url;a.download=fnbase+"_2026-2027.ics";document.body.appendChild(a);
+  a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+/* ===== UI =================================================================== */
+document.getElementById("branchSeg").addEventListener("click",e=>{
+  const btn=e.target.closest("button");if(!btn)return;
+  const b=btn.dataset.b;
+  if(activeBranches.has(b)){ if(activeBranches.size>1) activeBranches.delete(b); } // garder au moins une
+  else activeBranches.add(b);
+  syncBranchButtons();
+  render(); setHash();
+});
+function syncBranchButtons(){
+  document.querySelectorAll("#branchSeg button").forEach(b=>
+    b.classList.toggle("on",activeBranches.has(b.dataset.b)));
+}
+document.getElementById("dlAll").onclick=()=>{
+  const saved=new Set(activeBranches); activeBranches=new Set(["guides","louvettes"]);
+  downloadICS(EVENTS.slice().sort((a,b)=>a.d.localeCompare(b.d)),"sorties_toutes");
+  activeBranches=saved;
+};
+document.getElementById("dlView").onclick=()=>{
+  const evs=EVENTS.filter(visible).sort((a,b)=>a.d.localeCompare(b.d));
+  downloadICS(evs,"sorties_"+branchKey());
+};
+
+/* --- Sélecteur de vue --- */
+document.getElementById("viewSeg").addEventListener("click",e=>{
+  const btn=e.target.closest("button");if(!btn)return;
+  view=btn.dataset.v;
+  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b===btn));
+  render(); setHash();
+});
+
+/* --- Aide import --- */
+const help=document.getElementById("help");
+document.getElementById("helpBtn").onclick=()=>help.classList.add("show");
+document.getElementById("subBtn").onclick=()=>help.classList.add("show");
+help.addEventListener("click",e=>{if(e.target===help||e.target.hasAttribute("data-close"))help.classList.remove("show");});
+
+/* --- Impression multi-formats --- */
+const printModal=document.getElementById("printModal");
+document.getElementById("printBtn").onclick=()=>{
+  document.getElementById("pBranch").textContent=
+    activeBranches.size===2?"Guides + Louvettes":[...activeBranches].map(b=>b==="guides"?"Guides":"Louvettes").join("");
+  printModal.classList.add("show");
+};
+printModal.addEventListener("click",e=>{
+  if(e.target===printModal||e.target.hasAttribute("data-close")){printModal.classList.remove("show");return;}
+  const btn=e.target.closest("[data-print]");if(!btn)return;
+  const mode=btn.dataset.print;
+  const savedView=view;
+  printModal.classList.remove("show");
+  document.body.classList.remove("print-compact");
+  if(mode==="list"){view="list";render();}
+  else if(mode==="year"){view="year";render();document.body.classList.add("print-year");}
+  // 'current' : on n'y touche pas
+  // laisser le DOM se peindre avant d'ouvrir la boîte d'impression
+  setTimeout(()=>{
+    window.print();
+    // restaurer l'affichage écran après impression
+    document.body.classList.remove("print-compact");document.body.classList.remove("print-year");
+    if(view!==savedView){view=savedView;render();
+      document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));}
+  },250);
+});
+
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){help.classList.remove("show");printModal.classList.remove("show");}});
+
+/* --- Routing URL par vue (#vue=...&branche=...) --- */
+function setHash(){
+  const h=`#vue=${view}&branche=${branchKey()}`;
+  if(location.hash!==h) history.replaceState(null,"",h);
+}
+function applyHash(){
+  const h=(location.hash||"").replace(/^#/,"");
+  const q={}; h.split("&").forEach(kv=>{const[a,b]=kv.split("=");if(a)q[a]=b;});
+  const views=["agenda","list","quarter","year"];
+  if(views.includes(q.vue)) view=q.vue;
+  if(q.branche==="guides") activeBranches=new Set(["guides"]);
+  else if(q.branche==="louvettes") activeBranches=new Set(["louvettes"]);
+  else if(q.branche==="all") activeBranches=new Set(["guides","louvettes"]);
+  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  syncBranchButtons();
+}
+window.addEventListener("hashchange",()=>{applyHash();render();});
+
+/* --- Impression directe (Ctrl+P) : si on est en vue Année, tenir sur 1 feuille --- */
+let _printedAutoYear=false;
+window.addEventListener("beforeprint",()=>{
+  if(view==="year" && !document.body.classList.contains("print-year")){
+    document.body.classList.add("print-year"); _printedAutoYear=true;
+  }
+});
+window.addEventListener("afterprint",()=>{
+  if(_printedAutoYear){document.body.classList.remove("print-year");_printedAutoYear=false;}
+});
+
+/* Sur petit écran : démarrer directement sur la vue Mobile */
+if(window.matchMedia&&window.matchMedia("(max-width:640px)").matches){
+  view="agenda";
+  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v==="agenda"));
+}
+
+if(location.hash){ applyHash(); } 
+render();
+setHash();
+</script>
+</body>
+</html>
