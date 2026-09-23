@@ -507,11 +507,14 @@ function catOf(ev){
   if(ev.cat) return ev.cat;
   const s=(ev.t||"").toLowerCase();
   if(s.includes("haute patrouille")||/\bhp\b/.test(s)) return "hp";
-  // Rallye de Provence et Camp d'été = traités comme des WE Compagnie (même couleur)
-  if(s.includes("rallye")||s.includes("camp")||s.includes("compagnie")) return "compagnie";
-  if(s.includes("patrouille")) return "patrouille";
+  // Fetes (groupe / religieuses) : violet
   if(s.includes("messe")||s.includes("qu\u00eate")||s.includes("lepreux")||
      s.includes("l\u00e9preux")||s.includes("f\u00eate de groupe")||s.includes("car\u00eame")) return "religieux";
+  // Camp / Rallye / Compagnie : vert fonce, quelle que soit la branche
+  if(s.includes("rallye")||s.includes("camp")||s.includes("compagnie")) return "compagnie";
+  if(s.includes("patrouille")) return "patrouille";
+  // Tout WEEK-END (2 jours) = vert clair, comme les WE guides (ex: WE Louvettes)
+  if(ev.type==="we") return "patrouille";
   return "autre";
 }
 const CAT_LABEL={hp:"Haute Patrouille",compagnie:"Compagnie",patrouille:"Patrouille",
