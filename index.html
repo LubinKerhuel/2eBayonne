@@ -55,6 +55,7 @@
   .seg button.on{color:#fff;}
   .seg button.on[data-b="guides"]{background:var(--navy);}
   .seg button.on[data-b="louvettes"]{background:var(--wolf);}
+  .seg button.on[data-v]{background:var(--navy);}
   .seg .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
   .seg .dot.g{background:var(--gold);} .seg .dot.l{background:var(--wolf-l);}
 
@@ -131,6 +132,37 @@
   .card2 .opts .btn{justify-content:flex-start;}
   .card2 .close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);
     float:right;line-height:1;margin:-6px -4px 0 0;}
+  /* ===== Choix de branche au 1er acces (onboarding, gros boutons) ===== */
+  .choice .card2{max-width:480px;text-align:center;}
+  .choice h3{font-size:20px;}
+  .choice p{font-size:15px;}
+  .bigbtns{display:flex;flex-direction:column;gap:12px;margin-top:6px;}
+  .bigbtn{border:2px solid var(--line);background:#fff;border-radius:14px;padding:16px 18px;
+    font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;
+    justify-content:center;color:var(--navy);transition:.12s;}
+  .bigbtn:hover{border-color:var(--navy);background:#f3f6fb;}
+  .bigbtn .dot{width:16px;height:16px;border-radius:50%;display:inline-block;}
+  .bigbtn .dot.g{background:var(--navy);} .bigbtn .dot.l{background:var(--wolf);}
+  .bigbtn.two .dot{background:linear-gradient(135deg,var(--navy) 0 50%,var(--wolf) 50% 100%);}
+  /* ===== Modale "Ajouter a mon agenda" (sans jargon) ===== */
+  .agbtn{border:2px solid var(--gold-d);background:var(--gold);color:#3a2b06;border-radius:14px;
+    padding:15px 18px;font-size:16px;font-weight:700;cursor:pointer;width:100%;
+    display:flex;align-items:center;gap:12px;justify-content:center;text-decoration:none;}
+  .agbtn:hover{background:var(--gold-d);color:#fff;}
+  .agbtn.alt{background:#fff;color:var(--navy);border-color:var(--line);}
+  .agbtn.alt:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .agmore{margin-top:14px;}
+  .agmore summary{cursor:pointer;font-weight:600;color:var(--navy);font-size:14px;
+    list-style:none;padding:6px 0;}
+  .agmore summary::-webkit-details-marker{display:none;}
+  .agmore summary::before{content:"▸ ";}
+  .agmore[open] summary::before{content:"▾ ";}
+  .agnote{font-size:13px;color:var(--muted);background:#f3f6fb;border-radius:10px;
+    padding:10px 12px;margin:10px 0;}
+  /* Encadre "prochaine sortie" affiche AU-DESSUS de toutes les vues */
+  #nextTop{max-width:1180px;margin:14px auto 0;}
+  #nextTop .nextup{margin-bottom:0;}
+  @media print{ #nextTop{display:none;} }
   /* ===== Vue MOBILE / Agenda (cartes tactiles + timeline) ===== */
   .agenda{max-width:560px;margin:0 auto;}
   .nextup{background:linear-gradient(120deg,var(--navy),#2c5583);color:#fff;
@@ -318,20 +350,13 @@
     <button data-b="louvettes" class="on"><span class="dot l"></span>Louvettes</button>
   </div>
   <div class="seg" id="viewSeg">
-    <button data-v="agenda">📱 Mobile</button>
-    <button data-v="list">📋 Liste</button>
-    <button data-v="quarter">🗂️ Trimestre</button>
-    <button data-v="year" class="on">🗓️ Année</button>
+    <button data-v="list">📋 Prochaines sorties</button>
+    <button data-v="year" class="on">🗓️ Vue d'ensemble</button>
   </div>
   <span class="spacer"></span>
-  <span class="pdfgrp" title="Ouvrir le calendrier annuel en PDF (1 page paysage)">
-    <span class="pdflbl">📄 PDF année :</span>
-    <a class="btn" href="calendrier_annee_guides_louvettes.pdf" target="_blank" rel="noopener">Guides &amp; Louvettes</a>
-    <a class="btn" href="calendrier_annee_guides.pdf" target="_blank" rel="noopener">Guides</a>
-    <a class="btn" href="calendrier_annee_louvettes.pdf" target="_blank" rel="noopener">Louvette</a>
-  </span>
-  <button class="btn gold" id="subBtn">🔔 S'abonner</button>
-  <button class="btn" id="dlAll">⬇️ .ics</button>
+  <button class="btn gold" id="agBtn">📅 Ajouter à mon agenda</button>
+  <button class="btn" id="printBtn">🖨️ Imprimer / PDF</button>
+  <button class="btn" id="shareBtn">📤 Partager</button>
   <button class="btn" id="helpBtn">❓ Aide</button>
 </div>
 
@@ -347,6 +372,8 @@
 
 <div class="fetes-list" id="fetesList"></div>
 
+<div id="nextTop"></div>
+
 <div id="stat"></div>
 <main id="list"></main>
 
@@ -354,6 +381,38 @@
   Page autonome — aucune donnée envoyée en ligne. Fuseau : Europe/Paris.
   Généré pour l'année scoute 2026-2027. Vérifiez toujours les dates auprès des chefs/cheftaines avant de vous engager.
 </footer>
+
+<!-- Modal : choix de branche au 1er acces (memorise) -->
+<div class="modal choice" id="choice">
+  <div class="card2">
+    <h3>⛜️ Bienvenue !</h3>
+    <p>Votre enfant est chez les…<br>(vous pourrez changer plus tard)</p>
+    <div class="bigbtns">
+      <button class="bigbtn" data-choice="louvettes"><span class="dot l"></span>Louvette</button>
+      <button class="bigbtn" data-choice="guides"><span class="dot g"></span>Guide</button>
+      <button class="bigbtn two" data-choice="all"><span class="dot"></span>Les deux</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : ajouter a mon agenda (sans jargon, detection iPhone/Android) -->
+<div class="modal" id="agenda">
+  <div class="card2">
+    <button class="close" data-close>&times;</button>
+    <h3>📅 Ajouter les dates à mon agenda</h3>
+    <p id="agSub">Les nouvelles dates et les changements arriveront <b>tout seuls</b>
+       dans votre agenda, sans rien refaire.</p>
+    <div id="agMain"></div>
+    <details class="agmore" id="agMore">
+      <summary>Un autre appareil ?</summary>
+      <div id="agOther"></div>
+    </details>
+    <div class="agnote">
+      💡 Le calendrier affiche actuellement <b id="agWho"></b>.
+      Pour changer, fermez et cliquez sur <b>Guides</b> / <b>Louvettes</b> en haut.
+    </div>
+  </div>
+</div>
 
 <!-- Modal aide import -->
 <div class="modal" id="help">
@@ -565,6 +624,12 @@ function render(){
   document.getElementById("stat").textContent=
     `${evs.length} sortie(s) affichée(s) — `+(activeBranches.size===2?"Guides + Louvettes":(activeBranches.size?[...activeBranches].map(b=>b==="guides"?"Guides":"Louvettes").join(""):"aucune branche"))
     +"  •  vue "+({agenda:"mobile",list:"liste",quarter:"trimestre",year:"année"}[view]);
+  // encadre "prochaine sortie" au-dessus de toutes les vues (sauf mobile qui a le sien)
+  const nt=document.getElementById("nextTop");
+  if(nt){
+    nt.innerHTML = (view==="agenda") ? "" : nextUpHTML(evs,"\ud83d\udcc5 Ajouter \u00e0 mon agenda");
+    const b=nt.querySelector(".nextAg"); if(b) b.onclick=openAgenda;
+  }
   if(!evs.length){list.innerHTML='<div class="empty">Aucune sortie.</div>';return;}
   if(view==="agenda") return renderMobile(list,evs);
   if(view==="list") return renderList(list,evs);
@@ -606,6 +671,28 @@ function mobileCard(ev){
     <button class="go" data-i="${EVENTS.indexOf(ev)}" title="Ajouter \u00e0 l'agenda">📅</button>
   </div>`;
 }
+/* Encadre "prochaine sortie" (reutilise .nextup), affiche au-dessus de toutes les vues.
+   btnLabel : texte du bouton ; si vide, pas de bouton. */
+function nextUpHTML(evs,btnLabel){
+  const upcoming=evs.filter(ev=>{const e=endDate(ev);e.setHours(23,59,59,999);return e>=todayMidnight();});
+  if(!upcoming.length) return "";
+  const nx=upcoming[0], n=daysUntil(nx);
+  const cd = n<0 ? {b:"\u25cf",s:"en cours"} : n===0 ? {b:"0",s:"aujourd'hui"} :
+             n===1 ? {b:"1",s:"jour"} : {b:String(n),s:"jours"};
+  const a=parse(nx.d);
+  const dateTxt=nx.e
+    ? `${a.getDate()} \u2192 ${endDate(nx).getDate()} ${MONTHS[endDate(nx).getMonth()]}`
+    : `${WD[a.getDay()]} ${a.getDate()} ${MONTHS[a.getMonth()]}`;
+  const brTxt=nx.branches.map(b=>b==="guides"?"Guides":"Louvettes").join(" & ");
+  const btn=btnLabel?`<button class="nextAg">${btnLabel}</button>`:"";
+  return `<div class="nextup">
+    <div class="cd"><b>${cd.b}</b><span>${cd.s}</span></div>
+    <div class="lbl">Prochaine sortie</div>
+    <div class="ttl">${nx.t}</div>
+    <div class="meta">${dateTxt} \u00b7 ${brTxt}</div>
+    ${btn}
+  </div>`;
+}
 function renderMobile(list,evs){
   // « prochaine sortie » = 1er événement pas encore terminé
   const upcoming=evs.filter(ev=>{const e=endDate(ev);e.setHours(23,59,59,999);return e>=todayMidnight();});
@@ -638,7 +725,10 @@ function renderMobile(list,evs){
     body+=b.items.map(mobileCard).join("");
   });
   list.innerHTML=`<div class="agenda">${head}${body}</div>`;
-  list.querySelectorAll("[data-i]").forEach(el=>
+  // le gros bouton de l'encadre "prochaine sortie" ouvre la modale agenda (coherent)
+  const nb=list.querySelector(".nextup button"); if(nb) nb.onclick=openAgenda;
+  // les petites pastilles 📅 des cartes telechargent la sortie unique
+  list.querySelectorAll(".mev [data-i]").forEach(el=>
     el.onclick=()=>downloadICS([EVENTS[+el.dataset.i]],"sortie"));
 }
 
@@ -855,16 +945,68 @@ document.getElementById("branchSeg").addEventListener("click",e=>{
   if(activeBranches.has(b)){ if(activeBranches.size>1) activeBranches.delete(b); } // garder au moins une
   else activeBranches.add(b);
   syncBranchButtons();
+  rememberBranch();
   render(); setHash();
 });
 function syncBranchButtons(){
   document.querySelectorAll("#branchSeg button").forEach(b=>
     b.classList.toggle("on",activeBranches.has(b.dataset.b)));
 }
-document.getElementById("dlAll").onclick=()=>{
-  const saved=new Set(activeBranches); activeBranches=new Set(["guides","louvettes"]);
-  downloadICS(EVENTS.slice().sort((a,b)=>a.d.localeCompare(b.d)),"sorties_toutes");
-  activeBranches=saved;
+/* --- Ajouter a mon agenda : modale sans jargon, boutons selon appareil --- */
+const BASE="lubinkerhuel.github.io/2eBayonne";
+const ICS_FILE={all:"sorties_toutes.ics",guides:"sorties_guides.ics",louvettes:"sorties_louvettes.ics"};
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||
+  (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}
+function isAndroid(){return /android/i.test(navigator.userAgent);}
+function icsName(){return ICS_FILE[branchKey()];}
+function webcalURL(){return "webcal://"+BASE+"/"+icsName();}
+function httpsURL(){return "https://"+BASE+"/"+icsName();}
+function googleAddURL(){return "https://calendar.google.com/calendar/r?cid="+encodeURIComponent(httpsURL());}
+const WHO={all:"les Guides et les Louvettes",guides:"les Guides",louvettes:"les Louvettes"};
+function openAgenda(){
+  const main=document.getElementById("agMain"), other=document.getElementById("agOther");
+  document.getElementById("agWho").textContent=WHO[branchKey()];
+  const bIphone='<a class="agbtn" href="'+webcalURL()+'">🍏 iPhone / iPad — Ajouter</a>';
+  const bGoogle='<a class="agbtn" href="'+googleAddURL()+'" target="_blank" rel="noopener">📆 Google Agenda — Ajouter</a>';
+  // "Autre appareil" : import une-fois (fichier), + copie de lien de secours
+  const bFile='<a class="agbtn alt" id="agFile" href="#">⬇️ Ordinateur — télécharger le fichier</a>';
+  const bCopy='<button class="agbtn alt" id="agCopy">🔗 Copier le lien du calendrier</button>';
+  if(isIOS()){ main.innerHTML=bIphone; other.innerHTML=bGoogle+bFile+bCopy; }
+  else if(isAndroid()){ main.innerHTML=bGoogle; other.innerHTML=bIphone+bFile+bCopy; }
+  else { main.innerHTML=bGoogle+bIphone; other.innerHTML=bFile+bCopy; }
+  // handlers pour les boutons dynamiques
+  const f=document.getElementById("agFile"); if(f) f.onclick=(e)=>{e.preventDefault();
+    const evs=EVENTS.filter(visible).sort((a,b)=>a.d.localeCompare(b.d));
+    const fn=({all:"sorties_toutes",guides:"sorties_guides",louvettes:"sorties_louvettes"})[branchKey()];
+    downloadICS(evs,fn); };
+  const c=document.getElementById("agCopy"); if(c) c.onclick=async()=>{
+    try{await navigator.clipboard.writeText(httpsURL());c.textContent="✅ Lien copié !";}
+    catch(_){c.textContent=httpsURL();} };
+  document.getElementById("agenda").classList.add("show");
+}
+document.getElementById("agBtn").onclick=openAgenda;
+document.getElementById("agenda").addEventListener("click",e=>{
+  if(e.target.id==="agenda"||e.target.hasAttribute("data-close"))
+    document.getElementById("agenda").classList.remove("show");
+});
+
+/* --- Imprimer / PDF : ouvre le PDF pre-genere de la branche affichee --- */
+const PDF_FILE={all:"calendrier_annee_guides_louvettes.pdf",
+  guides:"calendrier_annee_guides.pdf",louvettes:"calendrier_annee_louvettes.pdf"};
+document.getElementById("printBtn").onclick=()=>{
+  window.open(PDF_FILE[branchKey()],"_blank","noopener");
+};
+
+/* --- Partager : Web Share API (mobile) + repli copie de lien --- */
+document.getElementById("shareBtn").onclick=async()=>{
+  const url="https://"+BASE+"/";
+  const data={title:"Calendrier des sorties 2e Bayonne",
+    text:"Calendrier des sorties scoutes 2026-2027 (Groupe 2e Bayonne)",url};
+  if(navigator.share){ try{await navigator.share(data);}catch(_){}
+  } else {
+    try{await navigator.clipboard.writeText(url);alert("Lien copié :\n"+url+"\n\nCollez-le dans un SMS ou un message.");}
+    catch(_){prompt("Copiez ce lien à partager :",url);}
+  }
 };
 
 /* --- Sélecteur de vue --- */
@@ -878,14 +1020,33 @@ document.getElementById("viewSeg").addEventListener("click",e=>{
 /* --- Aide import --- */
 const help=document.getElementById("help");
 document.getElementById("helpBtn").onclick=()=>help.classList.add("show");
-document.getElementById("subBtn").onclick=()=>help.classList.add("show");
 help.addEventListener("click",e=>{if(e.target===help||e.target.hasAttribute("data-close"))help.classList.remove("show");});
 
 /* --- Téléchargement PDF année (3 boutons) : bascule vue Année + branche, imprime 1 page --- */
 /* Les 3 boutons PDF année sont désormais de simples liens <a href> vers les PDF
    pré-générés (calendrier_annee_*.pdf) publiés à côté de la page. */
 
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){help.classList.remove("show");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){
+  document.querySelectorAll(".modal.show").forEach(m=>{ if(m.id!=="choice") m.classList.remove("show"); });
+}});
+
+/* --- Onboarding : choix de branche memorise (localStorage) --- */
+const PREF_KEY="2eb_branche";
+function getPref(){ try{return localStorage.getItem(PREF_KEY);}catch(_){return null;} }
+function setPref(v){ try{localStorage.setItem(PREF_KEY,v);}catch(_){} }
+function applyBranchPref(v){
+  if(v==="guides") activeBranches=new Set(["guides"]);
+  else if(v==="louvettes") activeBranches=new Set(["louvettes"]);
+  else activeBranches=new Set(["guides","louvettes"]);
+}
+document.getElementById("choice").addEventListener("click",e=>{
+  const b=e.target.closest("[data-choice]"); if(!b) return;
+  const v=b.dataset.choice; setPref(v); applyBranchPref(v);
+  document.getElementById("choice").classList.remove("show");
+  syncBranchButtons(); render(); setHash();
+});
+/* quand l'utilisateur change de branche a la main, on memorise sa preference */
+function rememberBranch(){ setPref(branchKey()); }
 
 /* --- Routing URL par vue (#vue=...&branche=...) --- */
 function setHash(){
@@ -918,14 +1079,23 @@ window.addEventListener("afterprint",()=>{
 
 /* URL par défaut : si aucun hash, rediriger vers la vue Année Guides+Louvettes.
    -> l'utilisateur arrive toujours sur #vue=year&branche=all */
+let _showOnboarding=false;
 if(!location.hash){
-  view="year"; activeBranches=new Set(["guides","louvettes"]);
-  location.replace("#vue=year&branche=all");
+  const pref=getPref();
+  if(pref){ // visiteur connu : on applique sa preference memorisee
+    view="year"; applyBranchPref(pref);
+    location.replace("#vue=year&branche="+(pref==="all"?"all":pref));
+  } else {  // 1er acces : afficher les deux + proposer le choix
+    view="year"; activeBranches=new Set(["guides","louvettes"]);
+    location.replace("#vue=year&branche=all");
+    _showOnboarding=true;
+  }
 }
 applyHash();          // applique le hash (celui de l'URL, ou celui qu'on vient de poser)
 fillFetesLegend();    // legende date+nom des fetes catholiques
 render();
 setHash();
+if(_showOnboarding) document.getElementById("choice").classList.add("show");
 </script>
 </body>
 </html>
