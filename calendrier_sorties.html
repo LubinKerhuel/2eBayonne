@@ -208,7 +208,12 @@
   .cal td .fete{position:absolute;top:1px;left:2px;font-size:10px;color:#8a4fb0;z-index:4;
     line-height:1;font-weight:900;text-shadow:0 0 2px #fff,0 0 2px #fff;}
   .cal td.has .fete{color:#6a2fa0;}
-  .cal td.fete-day{background:var(--religieux-bg)!important;}
+  /* pas de fond special pour les fetes catholiques : seule la petite croix reste */
+  .fetes-list{padding:6px 22px;background:#fbfaf7;border-bottom:1px solid var(--line);
+    font-size:12px;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;}
+  .fetes-list .flabel{font-weight:700;color:#7a4fb0;}
+  .fetes-list .fitem{white-space:nowrap;}
+  .fetes-list .fitem b{color:var(--ink);font-weight:600;}
   .cal td{position:relative;}
   .cal td.has{font-weight:700;cursor:pointer;color:#22343f;border-radius:0;}
   .cal td.has.hp{background:var(--hp-bg);box-shadow:inset 0 0 0 2px var(--hp);}
@@ -258,7 +263,7 @@
        Empilement vertical : en-tête + légende + grille qui prend tout l'espace ;
        chaque mois = carte flex dont le tableau des jours grandit pour remplir. */
     /* Hauteur FIXE < page (A4 paysage utile ≈ 19cm) au lieu de 100vh qui déborde d'1px. */
-    body.print-year{display:flex;flex-direction:column;height:18.4cm;overflow:hidden;}
+    body.print-year{display:flex;flex-direction:column;height:18.0cm;overflow:hidden;}
     body.print-year .grid-months{break-inside:avoid;}
     body.print-year header{flex:0 0 auto;padding:2px 2px 4px;border-bottom:2px solid var(--navy);
       display:flex;align-items:baseline;gap:10px;}
@@ -267,6 +272,8 @@
     body.print-year .legend{flex:0 0 auto;padding:3px 0;font-size:9px;gap:5px 14px;
       justify-content:center;border-bottom:1px solid var(--line);margin-bottom:1px;}
     body.print-year .legend .chip{width:12px;height:12px;}
+    body.print-year .fetes-list{flex:0 0 auto;padding:2px 0;font-size:7.5px;gap:2px 10px;
+      justify-content:center;background:#fff;border-bottom:1px solid var(--line);}
     body.print-year main{flex:1 1 auto;padding:2px 0 0;min-height:0;display:flex;}
     body.print-year #list{flex:1 1 auto;display:flex;min-height:0;}
     body.print-year .grid-months{flex:1 1 auto;display:grid;
@@ -328,9 +335,11 @@
   <span class="lg"><span class="chip autre"></span> Autre sortie</span>
   <span class="lg"><span class="chip religieux"></span> Fête de groupe</span>
   <span class="lg"><span class="chip vac"></span> Vacances (zone A)</span>
-  <span class="lg"><span style="font-size:13px">✝</span> Fête catholique</span>
+  <span class="lg"><span style="font-size:13px;color:#7a4fb0">✝</span> Fête catholique</span>
   <span class="lg" style="gap:4px"><span class="chip" style="background:linear-gradient(135deg,#5b8fc7 0 46%,#fff 46% 54%,#2e7d46 54% 100%)"></span> Jour commun G+L</span>
 </div>
+
+<div class="fetes-list" id="fetesList"></div>
 
 <div id="stat"></div>
 <main id="list"></main>
@@ -459,6 +468,15 @@ const FETES={
 function feteOn(y,m,day){
   const k=y+"-"+String(m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
   return FETES[k]||null;
+}
+/* Remplit la légende date+nom des fêtes catholiques (une seule fois) */
+function fillFetesLegend(){
+  const el=document.getElementById("fetesList"); if(!el)return;
+  const items=Object.keys(FETES).sort().map(k=>{
+    const a=parse(k);
+    return `<span class="fitem"><b>${a.getDate()} ${MONTHS[a.getMonth()].slice(0,4)}.</b> ${FETES[k]}</span>`;
+  }).join("");
+  el.innerHTML=`<span class="flabel">\u271d F\u00eates catholiques :</span>${items}`;
 }
 
 let activeBranches=new Set(["guides","louvettes"]); // toggles independants
@@ -686,7 +704,7 @@ function miniMonth(y,m){
             row+=`<td class="has ${cls} ${wknd} ${vac}" data-i="${iId}" title="Voir / telecharger">${fmark}<span class="num">${day}</span></td>`;
           }
         }
-        else row+=`<td class="${wknd} ${vac} ${fete?"fete-day":""}"${fete?` title="Fête catholique : ${fete}"`:""}>${fmark}<span class="num">${day}</span></td>`;
+        else row+=`<td class="${wknd} ${vac}"${fete?` title="Fête catholique : ${fete}"`:""}>${fmark}<span class="num">${day}</span></td>`;
         day++;
       }
     }
@@ -858,6 +876,7 @@ if(!location.hash){
   location.replace("#vue=year&branche=all");
 }
 applyHash();          // applique le hash (celui de l'URL, ou celui qu'on vient de poser)
+fillFetesLegend();    // legende date+nom des fetes catholiques
 render();
 setHash();
 </script>
