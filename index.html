@@ -55,6 +55,8 @@
   .seg button.on{color:#fff;}
   .seg button.on[data-b="guides"]{background:var(--navy);}
   .seg button.on[data-b="louvettes"]{background:var(--wolf);}
+  .seg button.on[data-b="all"]{background:linear-gradient(120deg,var(--navy) 0 50%,var(--wolf) 50% 100%);}
+  .seg .dot.two{background:linear-gradient(135deg,var(--gold) 0 50%,var(--wolf-l) 50% 100%);}
   .seg button.on[data-v]{background:var(--navy);}
   .seg .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
   .seg .dot.g{background:var(--gold);} .seg .dot.l{background:var(--wolf-l);}
@@ -160,8 +162,18 @@
   .agnote{font-size:13px;color:var(--muted);background:#f3f6fb;border-radius:10px;
     padding:10px 12px;margin:10px 0;}
   /* Encadre "prochaine sortie" affiche AU-DESSUS de toutes les vues */
-  #nextTop{max-width:1180px;margin:14px auto 0;}
-  #nextTop .nextup{margin-bottom:0;}
+  /* Encadre "prochaine sortie" GLOBAL : version compacte (1 ligne, petit) */
+  #nextTop{max-width:1180px;margin:12px auto 0;}
+  #nextTop .nextup{margin-bottom:0;padding:8px 14px;border-radius:10px;
+    display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(31,58,95,.18);}
+  #nextTop .nextup .cd{position:static;padding:2px 8px;border-radius:8px;
+    display:inline-flex;align-items:baseline;gap:4px;order:3;margin-left:auto;box-shadow:none;}
+  #nextTop .nextup .cd b{display:inline;font-size:14px;}
+  #nextTop .nextup .cd span{font-size:10px;}
+  #nextTop .nextup .lbl{font-size:10px;opacity:.8;}
+  #nextTop .nextup .ttl{font-size:15px;margin:0;}
+  #nextTop .nextup .meta{font-size:12.5px;opacity:.9;}
+  @media (max-width:520px){ #nextTop .nextup .lbl{display:none;} }
   @media print{ #nextTop{display:none;} }
   /* ===== Vue MOBILE / Agenda (cartes tactiles + timeline) ===== */
   .agenda{max-width:560px;margin:0 auto;}
@@ -345,9 +357,10 @@
 </header>
 
 <div class="controls">
-  <div class="seg" id="branchSeg" title="Activez une branche ou les deux">
-    <button data-b="guides" class="on"><span class="dot g"></span>Guides</button>
-    <button data-b="louvettes" class="on"><span class="dot l"></span>Louvettes</button>
+  <div class="seg" id="branchSeg" title="Choisissez une branche">
+    <button data-b="guides"><span class="dot g"></span>Guides</button>
+    <button data-b="louvettes"><span class="dot l"></span>Louvettes</button>
+    <button data-b="all" class="on"><span class="dot two"></span>Guides et Louvettes</button>
   </div>
   <div class="seg" id="viewSeg">
     <button data-v="list">📋 Prochaines sorties</button>
@@ -627,8 +640,7 @@ function render(){
   // encadre "prochaine sortie" au-dessus de toutes les vues (sauf mobile qui a le sien)
   const nt=document.getElementById("nextTop");
   if(nt){
-    nt.innerHTML = (view==="agenda") ? "" : nextUpHTML(evs,"\ud83d\udcc5 Ajouter \u00e0 mon agenda");
-    const b=nt.querySelector(".nextAg"); if(b) b.onclick=openAgenda;
+    nt.innerHTML = (view==="agenda") ? "" : nextUpHTML(evs,"");  // pas de bouton ici : on garde celui du haut
   }
   if(!evs.length){list.innerHTML='<div class="empty">Aucune sortie.</div>';return;}
   if(view==="agenda") return renderMobile(list,evs);
@@ -941,16 +953,15 @@ function downloadICS(evs,fnbase){
 /* ===== UI =================================================================== */
 document.getElementById("branchSeg").addEventListener("click",e=>{
   const btn=e.target.closest("button");if(!btn)return;
-  const b=btn.dataset.b;
-  if(activeBranches.has(b)){ if(activeBranches.size>1) activeBranches.delete(b); } // garder au moins une
-  else activeBranches.add(b);
+  applyBranchPref(btn.dataset.b);   // choix EXCLUSIF : guides | louvettes | all
   syncBranchButtons();
   rememberBranch();
   render(); setHash();
 });
 function syncBranchButtons(){
+  const k=branchKey();               // "guides" | "louvettes" | "all"
   document.querySelectorAll("#branchSeg button").forEach(b=>
-    b.classList.toggle("on",activeBranches.has(b.dataset.b)));
+    b.classList.toggle("on", b.dataset.b===k));
 }
 /* --- Ajouter a mon agenda : modale sans jargon, boutons selon appareil --- */
 const BASE="lubinkerhuel.github.io/2eBayonne";
