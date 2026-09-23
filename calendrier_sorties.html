@@ -64,6 +64,10 @@
   .btn.gold{background:var(--gold);border-color:var(--gold-d);color:#3a2b06;}
   .btn.gold:hover{background:var(--gold-d);color:#fff;}
   .spacer{flex:1;}
+  .pdfgrp{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;
+    border:1px solid var(--line);border-radius:10px;background:#fbfaf7;}
+  .pdfgrp .pdflbl{font-size:11.5px;font-weight:700;color:var(--muted);}
+  .pdfgrp .btn{padding:5px 9px;font-size:12.5px;}
 
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;
     padding:9px 22px;background:#fbfaf7;border-bottom:1px solid var(--line);font-size:12.5px;}
@@ -234,7 +238,7 @@
   @media print{
     @page{margin:8mm;}
     /* Vue année : on force le paysage A4 pour tenir sur une seule feuille */
-    @page year{size:A4 landscape;margin:6mm;}
+    @page year{size:A4 portrait;margin:7mm;}
     body.print-year{page:year;}
     header::after{display:none;}
     body{background:#fff;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -250,11 +254,11 @@
     .grid-months{gap:8px;grid-template-columns:repeat(3,1fr);}
     .mcard{break-inside:avoid;} .mcard h3{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     footer{display:none;}
-    /* --- Vue ANNÉE sur UNE SEULE PAGE (A4 paysage recommandé) ---
-       12 mois en 4 colonnes × 3 rangées, détail texte masqué, cellules compactes */
+    /* --- Vue ANNÉE sur UNE SEULE PAGE A4 PORTRAIT ---
+       12 mois en 3 colonnes × 4 rangées, détail texte masqué, cellules compactes */
     body.print-year main{padding:2px 0;}
-    body.print-year .grid-months{grid-template-columns:repeat(4,1fr);gap:4px;}
-    body.print-year .mcard{break-inside:avoid;font-size:8px;}
+    body.print-year .grid-months{grid-template-columns:repeat(3,1fr);gap:5px;}
+    body.print-year .mcard{break-inside:avoid;font-size:8.5px;}
     body.print-year .mcard h3{padding:3px 6px;font-size:10px;}
     body.print-year .mcard .mlist{display:none;} /* pas de détail texte */
     body.print-year .mcard .mnone{display:none;}
@@ -265,9 +269,9 @@
     body.print-year header h1{font-size:13px;}
     body.print-year .legend{padding:2px 0;font-size:8px;gap:7px;}
     body.print-year .legend .chip{width:11px;height:11px;}
-    body.print-year .cal td .fete{font-size:6px;}
+    body.print-year .cal td .fete{font-size:7px;}
     /* filet de sécurité : léger zoom pour absorber les marges imprimante et garantir 1 page */
-    body.print-year #list{zoom:.94;}
+    body.print-year #list{zoom:.97;}
   }
 </style>
 </head>
@@ -284,15 +288,19 @@
   </div>
   <div class="seg" id="viewSeg">
     <button data-v="agenda">📱 Mobile</button>
-    <button data-v="list" class="on">📋 Liste</button>
+    <button data-v="list">📋 Liste</button>
     <button data-v="quarter">🗂️ Trimestre</button>
-    <button data-v="year">🗓️ Année</button>
+    <button data-v="year" class="on">🗓️ Année</button>
   </div>
   <span class="spacer"></span>
+  <span class="pdfgrp" title="Télécharger le calendrier annuel en PDF (1 page)">
+    <span class="pdflbl">📄 PDF année :</span>
+    <button class="btn" data-year-pdf="all">Guides &amp; Louvettes</button>
+    <button class="btn" data-year-pdf="guides">Guides</button>
+    <button class="btn" data-year-pdf="louvettes">Louvette</button>
+  </span>
   <button class="btn gold" id="subBtn">🔔 S'abonner</button>
-  <button class="btn" id="dlAll">⬇️ Tout (.ics)</button>
-  <button class="btn" id="dlView">⬇️ La vue</button>
-  <button class="btn" id="printBtn">🖨️ Imprimer</button>
+  <button class="btn" id="dlAll">⬇️ .ics</button>
   <button class="btn" id="helpBtn">❓ Aide</button>
 </div>
 
@@ -346,23 +354,6 @@
   </div>
 </div>
 
-<!-- Modal impression -->
-<div class="modal" id="printModal">
-  <div class="card2">
-    <button class="close" data-close>&times;</button>
-    <h3>Imprimer le calendrier</h3>
-    <p>Choisissez le format. L'aperçu utilisera la branche filtrée
-       (<b id="pBranch">toutes</b>). Vous pourrez ensuite « Enregistrer au format PDF »
-       depuis la boîte d'impression.</p>
-    <div class="opts">
-      <button class="btn" data-print="list">📋 Fiche liste — une ligne par sortie (portrait)</button>
-      <button class="btn" data-print="year">🗓️ Année sur 1 page — 12 mini-mois couleur (A4 <b>paysage</b> conseillé)</button>
-      <button class="btn" data-print="current">🖥️ Vue actuelle — imprimer exactement l'affichage</button>
-    </div>
-    <p style="margin-top:14px">💡 Pour un PDF : dans la boîte d'impression, choisissez
-       l'imprimante « <b>Enregistrer au format PDF</b> » (Microsoft Print to PDF / Aperçu).</p>
-  </div>
-</div>
 
 <script>
 "use strict";
@@ -449,7 +440,7 @@ function branchKey(){ // "all" | "guides" | "louvettes" (compat export/hash)
   if(activeBranches.size===2) return "all";
   return activeBranches.has("guides")?"guides":(activeBranches.has("louvettes")?"louvettes":"none");
 }
-let view="list";
+let view="year"; // vue par défaut : le calendrier à l'année
 
 function parse(s){const[y,m,dd]=s.split("-").map(Number);return new Date(y,m-1,dd);}
 // Suite chronologique des 12 mois de l'année scoute (sept 2026 -> août 2027)
@@ -502,7 +493,7 @@ function render(){
   const evs=EVENTS.filter(visible).sort((a,b)=>a.d.localeCompare(b.d));
   document.getElementById("stat").textContent=
     `${evs.length} sortie(s) affichée(s) — `+(activeBranches.size===2?"Guides + Louvettes":(activeBranches.size?[...activeBranches].map(b=>b==="guides"?"Guides":"Louvettes").join(""):"aucune branche"))
-    +"  •  vue "+({list:"liste",quarter:"trimestre",year:"année"}[view]);
+    +"  •  vue "+({agenda:"mobile",list:"liste",quarter:"trimestre",year:"année"}[view]);
   if(!evs.length){list.innerHTML='<div class="empty">Aucune sortie.</div>';return;}
   if(view==="agenda") return renderMobile(list,evs);
   if(view==="list") return renderList(list,evs);
@@ -659,9 +650,11 @@ function miniMonth(y,m){
           const pick=g||l;
           const iId=(pick||hit).i;
           if(dual){
+            // moitié haut-gauche = catégorie Guides ; moitié bas-droite = catégorie Louvettes ;
+            // fin liseré blanc diagonal pour signaler « commun » même quand les 2 couleurs coïncident
             const cg=CATBG[g.cls]||"var(--autre-bg)", cl=CATBG[l.cls]||"var(--autre-bg)";
-            const bg=`linear-gradient(135deg, ${cg} 0 50%, ${cl} 50% 100%)`;
-            row+=`<td class="has dual ${wknd} ${vac}" data-i="${iId}" style="background:${bg};color:#22343f" title="Commun Guides (haut-gauche) + Louvettes (bas-droite)">${fmark}<span class="num">${day}</span></td>`;
+            const bg=`linear-gradient(135deg, ${cg} 0 47%, #fff 47% 53%, ${cl} 53% 100%)`;
+            row+=`<td class="has dual ${wknd} ${vac}" data-i="${iId}" style="background:${bg};color:#22343f" title="Commun Guides (${CAT_LABEL[g.cls]}) + Louvettes (${CAT_LABEL[l.cls]})">${fmark}<span class="num">${day}</span></td>`;
           }else{
             const cls=(pick||{cls:"autre"}).cls;
             row+=`<td class="has ${cls} ${wknd} ${vac}" data-i="${iId}" title="Voir / telecharger">${fmark}<span class="num">${day}</span></td>`;
@@ -717,11 +710,21 @@ function esc(t){return t.replace(/&amp;/g,"&").replace(/([,;\\])/g,"\\$1").repla
 function stamp(){const d=new Date();const p=n=>String(n).padStart(2,"0");
   return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+"T"+
          p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+"Z";}
-function fold(l){/* pliage 75 octets RFC5545 */
-  if(l.length<=74)return l;const out=[];let s=l;
-  out.push(s.slice(0,74));s=s.slice(74);
-  while(s.length>73){out.push(" "+s.slice(0,73));s=s.slice(73);}
-  out.push(" "+s);return out.join("\r\n");}
+function utf8len(s){/* nombre d'octets UTF-8 */
+  return unescape(encodeURIComponent(s)).length;
+}
+function fold(l){/* pliage RFC5545 : lignes ≤ 75 OCTETS, sans couper un code-point.
+     1re ligne = 75 octets max ; continuations = 1 espace + 74 octets max. */
+  if(utf8len(l)<=75) return l;
+  const out=[]; let cur="", budget=75, chars=Array.from(l); // Array.from => par code-point
+  for(let i=0;i<chars.length;i++){
+    const ch=chars[i], w=utf8len(ch);
+    if(utf8len(cur)+w>budget){ out.push(cur); cur=" "+ch; budget=75; }
+    else cur+=ch;
+  }
+  if(cur) out.push(cur);
+  return out.join("\r\n");
+}
 function buildICS(evs,calName){
   const L=["BEGIN:VCALENDAR","VERSION:2.0",
     "PRODID:-//Groupe Scout//Calendrier Sorties 2026-2027//FR","CALSCALE:GREGORIAN",
@@ -744,7 +747,7 @@ function buildICS(evs,calName){
     L.push("END:VEVENT");
   });
   L.push("END:VCALENDAR");
-  return L.join("\r\n");
+  return L.join("\r\n")+"\r\n"; // CRLF final requis par RFC 5545
 }
 function downloadICS(evs,fnbase){
   const name=CAL_NAME[branchKey()]||"Sorties Guides & Louvettes";
@@ -772,10 +775,6 @@ document.getElementById("dlAll").onclick=()=>{
   downloadICS(EVENTS.slice().sort((a,b)=>a.d.localeCompare(b.d)),"sorties_toutes");
   activeBranches=saved;
 };
-document.getElementById("dlView").onclick=()=>{
-  const evs=EVENTS.filter(visible).sort((a,b)=>a.d.localeCompare(b.d));
-  downloadICS(evs,"sorties_"+branchKey());
-};
 
 /* --- Sélecteur de vue --- */
 document.getElementById("viewSeg").addEventListener("click",e=>{
@@ -791,34 +790,30 @@ document.getElementById("helpBtn").onclick=()=>help.classList.add("show");
 document.getElementById("subBtn").onclick=()=>help.classList.add("show");
 help.addEventListener("click",e=>{if(e.target===help||e.target.hasAttribute("data-close"))help.classList.remove("show");});
 
-/* --- Impression multi-formats --- */
-const printModal=document.getElementById("printModal");
-document.getElementById("printBtn").onclick=()=>{
-  document.getElementById("pBranch").textContent=
-    activeBranches.size===2?"Guides + Louvettes":[...activeBranches].map(b=>b==="guides"?"Guides":"Louvettes").join("");
-  printModal.classList.add("show");
-};
-printModal.addEventListener("click",e=>{
-  if(e.target===printModal||e.target.hasAttribute("data-close")){printModal.classList.remove("show");return;}
-  const btn=e.target.closest("[data-print]");if(!btn)return;
-  const mode=btn.dataset.print;
-  const savedView=view;
-  printModal.classList.remove("show");
-  document.body.classList.remove("print-compact");
-  if(mode==="list"){view="list";render();}
-  else if(mode==="year"){view="year";render();document.body.classList.add("print-year");}
-  // 'current' : on n'y touche pas
-  // laisser le DOM se peindre avant d'ouvrir la boîte d'impression
+/* --- Téléchargement PDF année (3 boutons) : bascule vue Année + branche, imprime 1 page --- */
+function printYearPDF(which){
+  const savedView=view, savedBranches=new Set(activeBranches);
+  view="year";
+  activeBranches = which==="guides"?new Set(["guides"])
+                 : which==="louvettes"?new Set(["louvettes"])
+                 : new Set(["guides","louvettes"]);
+  syncBranchButtons();
+  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v==="year"));
+  render();
+  document.body.classList.add("print-year");
   setTimeout(()=>{
     window.print();
-    // restaurer l'affichage écran après impression
-    document.body.classList.remove("print-compact");document.body.classList.remove("print-year");
-    if(view!==savedView){view=savedView;render();
-      document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));}
-  },250);
-});
+    document.body.classList.remove("print-year");
+    view=savedView; activeBranches=savedBranches;
+    syncBranchButtons();
+    document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+    render(); setHash();
+  },300);
+}
+document.querySelectorAll("[data-year-pdf]").forEach(b=>
+  b.onclick=()=>printYearPDF(b.dataset.yearPdf));
 
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){help.classList.remove("show");printModal.classList.remove("show");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){help.classList.remove("show");}});
 
 /* --- Routing URL par vue (#vue=...&branche=...) --- */
 function setHash(){
