@@ -230,7 +230,10 @@
   .cal td.has:hover{outline:2px solid var(--gold-d);outline-offset:-2px;z-index:2;}
   .mcard .mnone{padding:0 10px 8px;font-size:10.5px;color:#bbb;}
   .mcard .mlist{padding:6px 10px 10px;font-size:11px;border-top:1px dashed var(--line);}
-  .mcard .mlist .mi{display:flex;gap:6px;align-items:flex-start;margin:3px 0;}
+  .mcard .mlist .mi{display:flex;gap:6px;align-items:flex-start;margin:3px 0;
+    border-radius:5px;padding:1px 3px;transition:background .15s;}
+  .mcard .mlist .mi.hl{background:var(--gold);color:#3a2b06;font-weight:600;}
+  .mcard .mlist .mi.hl .sw{outline:1px solid #3a2b06;}
   .mcard .mlist .mi .sw{width:9px;height:9px;border-radius:3px;margin-top:3px;flex:0 0 auto;}
   .sw.hp{background:var(--hp);} .sw.compagnie{background:var(--compagnie);}
   .sw.patrouille{background:var(--patrouille);} .sw.rallye{background:var(--rallye);}
@@ -511,6 +514,15 @@ function catOf(ev){
 const CAT_LABEL={hp:"Haute Patrouille",compagnie:"Compagnie",patrouille:"Patrouille",
   autre:"Sortie",religieux:"F\u00eate religieuse"};
 function gcls(ev){return catOf(ev);}
+/* Libellé (date + nom + branche) d'une sortie, pour le tooltip d'une case */
+function ev0title(i){
+  const ev=EVENTS[i]; if(!ev)return"";
+  const a=parse(ev.d), b=ev.e?parse(ev.e):null;
+  const when=b?`${a.getDate()}\u2013${b.getDate()} ${MONTHS[b.getMonth()].slice(0,4)}.`
+              :`${a.getDate()} ${MONTHS[a.getMonth()].slice(0,4)}.`;
+  const br=ev.branches.map(x=>x==="guides"?"Guides":"Louvettes").join(" & ");
+  return `${when} \u2014 ${ev.t.replace(/&amp;/g,"&")} (${br})`;
+}
 function evsInMonth(y,m){return EVENTS.filter(visible).filter(ev=>{
   const a=parse(ev.d),b=ev.e?parse(ev.e):a;
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
@@ -635,8 +647,16 @@ function wireAdd(root){
     b.onclick=()=>downloadICS([EVENTS[+b.dataset.i]],"sortie"));
 }
 function wireCells(root){
+  // Clic sur une case = surligner le détail de la sortie de cette date (pas d'ICS).
   root.querySelectorAll(".cal td.has").forEach(td=>
-    td.onclick=()=>downloadICS([EVENTS[+td.dataset.i]],"sortie"));
+    td.onclick=()=>{
+      const card=td.closest(".mcard"); if(!card)return;
+      const mi=card.querySelector('.mi[data-i="'+td.dataset.i+'"]');
+      card.querySelectorAll(".mi.hl").forEach(x=>x.classList.remove("hl"));
+      if(mi){ mi.classList.add("hl");
+        mi.scrollIntoView({block:"nearest",behavior:"smooth"});
+        setTimeout(()=>mi.classList.remove("hl"),1600); }
+    });
 }
 
 /* ---- Vue LISTE (groupée par mois) ---- */
@@ -701,7 +721,7 @@ function miniMonth(y,m){
             row+=`<td class="has dual ${wknd} ${vac}" data-i="${iId}" style="background:${bg};color:#22343f" title="Commun Guides (${CAT_LABEL[g.cls]}) + Louvettes (${CAT_LABEL[l.cls]})">${fmark}<span class="num">${day}</span></td>`;
           }else{
             const cls=(pick||{cls:"autre"}).cls;
-            row+=`<td class="has ${cls} ${wknd} ${vac}" data-i="${iId}" title="Voir / telecharger">${fmark}<span class="num">${day}</span></td>`;
+            row+=`<td class="has ${cls} ${wknd} ${vac}" data-i="${iId}" title="${ev0title(iId)}">${fmark}<span class="num">${day}</span></td>`;
           }
         }
         else row+=`<td class="${wknd} ${vac}"${fete?` title="Fête catholique : ${fete}"`:""}>${fmark}<span class="num">${day}</span></td>`;
@@ -715,7 +735,7 @@ function miniMonth(y,m){
     `<div class="mlist">${evs.map(ev=>{
       const a=parse(ev.d),b=ev.e?parse(ev.e):null;
       const dd=b?`${a.getDate()}\u2013${b.getMonth()===m?b.getDate():b.getDate()+"/"+(b.getMonth()+1)}`:`${a.getDate()}`;
-      return `<div class="mi"><span class="sw ${gcls(ev)}"></span><span><b>${dd}</b> ${ev.t}</span></div>`;
+      return `<div class="mi" data-i="${EVENTS.indexOf(ev)}"><span class="sw ${gcls(ev)}"></span><span><b>${dd}</b> ${ev.t}</span></div>`;
     }).join("")}</div>`
     :`<div class="mnone">— aucune sortie —</div>`;
   return `<div class="mcard">
