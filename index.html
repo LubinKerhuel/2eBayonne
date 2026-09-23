@@ -587,6 +587,8 @@ function catOf(ev){
   if(s.includes("patrouille")) return "patrouille";
   // Tout WEEK-END (2 jours) = vert clair, comme les WE guides (ex: WE Louvettes)
   if(ev.type==="we") return "patrouille";
+  // Toute "Sortie Louvettes" = meme vert pale que le WE Louvettes
+  if(s.includes("louvettes")) return "patrouille";
   return "autre";
 }
 const CAT_LABEL={hp:"Haute Patrouille",compagnie:"Compagnie",patrouille:"Patrouille",
