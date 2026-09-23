@@ -26,7 +26,8 @@
     --patrouille:#9acb54; --patrouille-bg:#eef6df;/* vert lime clair */
     --camp:#2e7d46;       --camp-bg:#d6ebdd;    /* = compagnie */
     --rallye:#2e7d46;     --rallye-bg:#d6ebdd;  /* = compagnie */
-    --autre:#5b8fc7;      --autre-bg:#e2edf7;   /* bleu pastel */
+    /* "Autre" et "religieux" partagent le MEME violet pastel */
+    --autre:#9a72c4;      --autre-bg:#ece2f6;   /* violet pastel (ex-bleu) */
     --religieux:#9a72c4;  --religieux-bg:#ece2f6;/* violet pastel */
     /* Zone de vacances A (bandeau parallèle) */
     --vac:#e8a94e;        --vac-bg:#fbeed6;
@@ -307,7 +308,7 @@
 </head>
 <body>
 <header>
-  <h1><span class="fleur">⚜️</span> Calendrier des sorties 2026 – 2027</h1>
+  <h1><span class="fleur">⛜️</span> <span id="h1txt">Calendrier des sorties guides et louvette 2026-2027</span></h1>
   <div class="sub">Groupe 2<sup>e</sup> Bayonne &middot; branches Guides &amp; Louvettes &middot; calendrier prévisionnel <em>(dates de camp à confirmer)</em></div>
 </header>
 
@@ -338,11 +339,10 @@
   <span class="lg"><span class="chip hp"></span> Haute Patrouille</span>
   <span class="lg"><span class="chip patrouille"></span> Patrouille</span>
   <span class="lg"><span class="chip compagnie"></span> Compagnie <span style="color:#9aa2ac">(+ rallye, camp)</span></span>
-  <span class="lg"><span class="chip autre"></span> Autre sortie</span>
-  <span class="lg"><span class="chip religieux"></span> Fête de groupe</span>
+  <span class="lg"><span class="chip autre"></span> Autre sortie / Fête de groupe</span>
   <span class="lg"><span class="chip vac"></span> Vacances (zone A)</span>
   <span class="lg"><span style="font-size:13px;color:#7a4fb0">✝</span> Fête catholique</span>
-  <span class="lg" style="gap:4px"><span class="chip" style="background:linear-gradient(135deg,#5b8fc7 0 46%,#fff 46% 54%,#2e7d46 54% 100%)"></span> Jour commun G+L</span>
+  <span class="lg" style="gap:4px"><span class="chip" style="background:linear-gradient(135deg,#9a72c4 0 46%,#fff 46% 54%,#2e7d46 54% 100%)"></span> Jour commun G+L</span>
 </div>
 
 <div class="fetes-list" id="fetesList"></div>
@@ -547,7 +547,16 @@ function durLabel(ev){
 }
 function visible(ev){return ev.branches.some(b=>activeBranches.has(b));}
 
+function updateTitle(){
+  const k=branchKey();
+  const t = k==="guides"    ? "Calendrier des sorties guides 2026-2027"
+          : k==="louvettes" ? "Calendrier des sorties louvettes 2026-2027"
+          :                   "Calendrier des sorties guides et louvette 2026-2027";
+  const h=document.getElementById("h1txt"); if(h) h.textContent=t;
+  document.title=t+" \u2014 Groupe 2e Bayonne";
+}
 function render(){
+  updateTitle();
   const list=document.getElementById("list");
   const evs=EVENTS.filter(visible).sort((a,b)=>a.d.localeCompare(b.d));
   document.getElementById("stat").textContent=
