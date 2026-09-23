@@ -974,7 +974,8 @@ function isAndroid(){return /android/i.test(navigator.userAgent);}
 function icsName(){return ICS_FILE[branchKey()];}
 function webcalURL(){return "webcal://"+BASE+"/"+icsName();}
 function httpsURL(){return "https://"+BASE+"/"+icsName();}
-function googleAddURL(){return "https://calendar.google.com/calendar/r?cid="+encodeURIComponent(httpsURL());}
+/* Google Agenda "Ajouter par URL" : cid attend le lien webcal:// ENCODE (forme fiable) */
+function googleAddURL(){return "https://calendar.google.com/calendar/r?cid="+encodeURIComponent(webcalURL());}
 const WHO={all:"les Guides et les Louvettes",guides:"les Guides",louvettes:"les Louvettes"};
 function openAgenda(){
   const main=document.getElementById("agMain"), other=document.getElementById("agOther");
@@ -982,7 +983,7 @@ function openAgenda(){
   const bIphone='<a class="agbtn" href="'+webcalURL()+'">🍏 iPhone / iPad — Ajouter</a>';
   const bGoogle='<a class="agbtn" href="'+googleAddURL()+'" target="_blank" rel="noopener">📆 Google Agenda — Ajouter</a>';
   // "Autre appareil" : import une-fois (fichier), + copie de lien de secours
-  const bFile='<a class="agbtn alt" id="agFile" href="#">⬇️ Ordinateur — télécharger le fichier</a>';
+  const bFile='<button class="agbtn alt" id="agFile">⬇️ Ordinateur — télécharger le fichier</button>';
   const bCopy='<button class="agbtn alt" id="agCopy">🔗 Copier le lien du calendrier</button>';
   if(isIOS()){ main.innerHTML=bIphone; other.innerHTML=bGoogle+bFile+bCopy; }
   else if(isAndroid()){ main.innerHTML=bGoogle; other.innerHTML=bIphone+bFile+bCopy; }
