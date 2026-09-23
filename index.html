@@ -310,11 +310,11 @@
     <button data-v="year" class="on">🗓️ Année</button>
   </div>
   <span class="spacer"></span>
-  <span class="pdfgrp" title="Télécharger le calendrier annuel en PDF (1 page)">
+  <span class="pdfgrp" title="Ouvrir le calendrier annuel en PDF (1 page paysage)">
     <span class="pdflbl">📄 PDF année :</span>
-    <button class="btn" data-year-pdf="all">Guides &amp; Louvettes</button>
-    <button class="btn" data-year-pdf="guides">Guides</button>
-    <button class="btn" data-year-pdf="louvettes">Louvette</button>
+    <a class="btn" href="calendrier_annee_guides_louvettes.pdf" target="_blank" rel="noopener">Guides &amp; Louvettes</a>
+    <a class="btn" href="calendrier_annee_guides.pdf" target="_blank" rel="noopener">Guides</a>
+    <a class="btn" href="calendrier_annee_louvettes.pdf" target="_blank" rel="noopener">Louvette</a>
   </span>
   <button class="btn gold" id="subBtn">🔔 S'abonner</button>
   <button class="btn" id="dlAll">⬇️ .ics</button>
@@ -817,27 +817,8 @@ document.getElementById("subBtn").onclick=()=>help.classList.add("show");
 help.addEventListener("click",e=>{if(e.target===help||e.target.hasAttribute("data-close"))help.classList.remove("show");});
 
 /* --- Téléchargement PDF année (3 boutons) : bascule vue Année + branche, imprime 1 page --- */
-function printYearPDF(which){
-  const savedView=view, savedBranches=new Set(activeBranches);
-  view="year";
-  activeBranches = which==="guides"?new Set(["guides"])
-                 : which==="louvettes"?new Set(["louvettes"])
-                 : new Set(["guides","louvettes"]);
-  syncBranchButtons();
-  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v==="year"));
-  render();
-  document.body.classList.add("print-year");
-  setTimeout(()=>{
-    window.print();
-    document.body.classList.remove("print-year");
-    view=savedView; activeBranches=savedBranches;
-    syncBranchButtons();
-    document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
-    render(); setHash();
-  },300);
-}
-document.querySelectorAll("[data-year-pdf]").forEach(b=>
-  b.onclick=()=>printYearPDF(b.dataset.yearPdf));
+/* Les 3 boutons PDF année sont désormais de simples liens <a href> vers les PDF
+   pré-générés (calendrier_annee_*.pdf) publiés à côté de la page. */
 
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){help.classList.remove("show");}});
 
