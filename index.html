@@ -350,7 +350,16 @@
       <span class="btn" style="cursor:default"><b>Outlook&nbsp;:</b>&nbsp;Fichier → Ouvrir &amp; exporter → Importer un fichier .ics</span>
     </div>
     <p style="margin-top:12px">💡 Astuce : filtrez d'abord sur <b>Guides</b> ou <b>Louvettes</b>,
-       puis « La vue » pour n'importer que les dates qui vous concernent.</p>
+       puis « .ics » pour n'importer que les dates qui vous concernent.</p>
+
+    <h3 style="margin-top:18px">📷 Partager (QR code)</h3>
+    <p>Scannez ou partagez ce code pour ouvrir le calendrier :</p>
+    <div style="text-align:center">
+      <img src="qrcode.png" alt="QR code du calendrier" width="180" height="180"
+           style="border:1px solid var(--line);border-radius:12px;padding:6px;background:#fff"/>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+        <a href="https://lubinkerhuel.github.io/2eBayonne/">lubinkerhuel.github.io/2eBayonne</a></div>
+    </div>
   </div>
 </div>
 
@@ -844,13 +853,13 @@ window.addEventListener("afterprint",()=>{
   if(_printedAutoYear){document.body.classList.remove("print-year");_printedAutoYear=false;}
 });
 
-/* Sur petit écran : démarrer directement sur la vue Mobile */
-if(window.matchMedia&&window.matchMedia("(max-width:640px)").matches){
-  view="agenda";
-  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v==="agenda"));
+/* URL par défaut : si aucun hash, rediriger vers la vue Année Guides+Louvettes.
+   -> l'utilisateur arrive toujours sur #vue=year&branche=all */
+if(!location.hash){
+  view="year"; activeBranches=new Set(["guides","louvettes"]);
+  location.replace("#vue=year&branche=all");
 }
-
-if(location.hash){ applyHash(); } 
+applyHash();          // applique le hash (celui de l'URL, ou celui qu'on vient de poser)
 render();
 setHash();
 </script>
