@@ -234,6 +234,9 @@
     border-radius:5px;padding:1px 3px;transition:background .15s;}
   .mcard .mlist .mi.hl{background:var(--gold);color:#3a2b06;font-weight:600;}
   .mcard .mlist .mi.hl .sw{outline:1px solid #3a2b06;}
+  .mcard .mlist .mi.fete-mi{color:#7a4fb0;}
+  .mcard .mlist .mi.fete-mi .fx{width:9px;text-align:center;font-weight:900;
+    flex:0 0 auto;font-size:10px;line-height:1;margin-top:1px;}
   .mcard .mlist .mi .sw{width:9px;height:9px;border-radius:3px;margin-top:3px;flex:0 0 auto;}
   .sw.hp{background:var(--hp);} .sw.compagnie{background:var(--compagnie);}
   .sw.patrouille{background:var(--patrouille);} .sw.rallye{background:var(--rallye);}
@@ -731,12 +734,24 @@ function miniMonth(y,m){
     cells+=`<tr>${row}</tr>`;
     if(day>nd) break;
   }
-  const detail=evs.length?
-    `<div class="mlist">${evs.map(ev=>{
-      const a=parse(ev.d),b=ev.e?parse(ev.e):null;
-      const dd=b?`${a.getDate()}\u2013${b.getMonth()===m?b.getDate():b.getDate()+"/"+(b.getMonth()+1)}`:`${a.getDate()}`;
-      return `<div class="mi" data-i="${EVENTS.indexOf(ev)}"><span class="sw ${gcls(ev)}"></span><span><b>${dd}</b> ${ev.t}</span></div>`;
-    }).join("")}</div>`
+  // Lignes de détail : sorties + fêtes catholiques du mois, triées par jour
+  const rows=[];
+  evs.forEach(ev=>{
+    const a=parse(ev.d),b=ev.e?parse(ev.e):null;
+    const dd=b?`${a.getDate()}\u2013${b.getMonth()===m?b.getDate():b.getDate()+"/"+(b.getMonth()+1)}`:`${a.getDate()}`;
+    rows.push({day:a.getDate(),
+      html:`<div class="mi" data-i="${EVENTS.indexOf(ev)}"><span class="sw ${gcls(ev)}"></span><span><b>${dd}</b> ${ev.t}</span></div>`});
+  });
+  Object.keys(FETES).forEach(k=>{
+    const a=parse(k);
+    if(a.getFullYear()===y && a.getMonth()===m){
+      rows.push({day:a.getDate(),
+        html:`<div class="mi fete-mi"><span class="fx">\u271d</span><span><b>${a.getDate()}</b> ${FETES[k]}</span></div>`});
+    }
+  });
+  rows.sort((p,q)=>p.day-q.day);
+  const detail=rows.length?
+    `<div class="mlist">${rows.map(r=>r.html).join("")}</div>`
     :`<div class="mnone">— aucune sortie —</div>`;
   return `<div class="mcard">
     <h3><span>${MONTHS[m]}</span><span class="yr">${y}</span></h3>
