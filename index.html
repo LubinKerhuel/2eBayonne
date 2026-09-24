@@ -518,14 +518,16 @@ const MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août"
 const WD=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const CAL_NAME={all:"Sorties Guides & Louvettes",guides:"Sorties Guides",louvettes:"Sorties Louvettes"};
 
-/* ===== Vacances scolaires Zone A 2026-2027 (dates INCLUSIVES) ===============
-   Aix-Marseille, Besan\u00e7on, Bordeaux, Clermont, Dijon, Grenoble, Limoges,
-   Lyon, Poitiers. Sources : calendrier officiel \u00c9ducation nationale. ======== */
+/* ===== Vacances scolaires ZONE A 2026-2027 (e = jour de REPRISE) ============
+   Bayonne = academie de BORDEAUX = zone A. Hiver et Printemps sont SPECIFIQUES
+   a la zone A ; Toussaint / Noel / Ete sont communes a toutes les zones.
+   Zone A officiel : Toussaint 17/10-02/11 ; Noel 19/12-04/01 ;
+   Hiver 13/02-01/03 ; Printemps 10/04-26/04 ; Ete des 03/07/2027. ========== */
 const VACANCES=[
   {d:"2026-10-17", e:"2026-11-02", t:"Toussaint"},
   {d:"2026-12-19", e:"2027-01-04", t:"No\u00ebl"},
-  {d:"2027-02-06", e:"2027-02-22", t:"Hiver (zone A)"},
-  {d:"2027-04-03", e:"2027-04-19", t:"Printemps (zone A)"},
+  {d:"2027-02-13", e:"2027-03-01", t:"Hiver (zone A)"},
+  {d:"2027-04-10", e:"2027-04-26", t:"Printemps (zone A)"},
   {d:"2027-07-03", e:"2027-08-31", t:"\u00c9t\u00e9"}
 ];
 function isVac(y,m,day){
