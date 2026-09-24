@@ -523,11 +523,12 @@ const CAL_NAME={all:"Sorties Guides & Louvettes",guides:"Sorties Guides",louvett
    a la zone A ; Toussaint / Noel / Ete sont communes a toutes les zones.
    Zone A officiel : Toussaint 17/10-02/11 ; Noel 19/12-04/01 ;
    Hiver 13/02-01/03 ; Printemps 10/04-26/04 ; Ete des 03/07/2027. ========== */
+/* d = samedi de depart ; e = DIMANCHE (dernier jour). Le LUNDI de reprise = classe, PAS en vacances. */
 const VACANCES=[
-  {d:"2026-10-17", e:"2026-11-02", t:"Toussaint"},
-  {d:"2026-12-19", e:"2027-01-04", t:"No\u00ebl"},
-  {d:"2027-02-13", e:"2027-03-01", t:"Hiver (zone A)"},
-  {d:"2027-04-10", e:"2027-04-26", t:"Printemps (zone A)"},
+  {d:"2026-10-17", e:"2026-11-01", t:"Toussaint"},
+  {d:"2026-12-19", e:"2027-01-03", t:"No\u00ebl"},
+  {d:"2027-02-13", e:"2027-02-28", t:"Hiver (zone A)"},
+  {d:"2027-04-10", e:"2027-04-25", t:"Printemps (zone A)"},
   {d:"2027-07-03", e:"2027-08-31", t:"\u00c9t\u00e9"}
 ];
 function isVac(y,m,day){
